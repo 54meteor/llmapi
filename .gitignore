@@ -1,9 +1,5 @@
-.idea
-.vscode
-upload
+-e one-api
+one-api.exe
 *.exe
-*.db
-build
-*.db-journal
-logs
-data
+web/build/
+web/default/build/
