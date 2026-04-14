@@ -1,5 +1,8 @@
--e one-api
+one-api
 one-api.exe
 *.exe
 web/build/
 web/default/build/
+logs/
+*.db
+one-api.db
