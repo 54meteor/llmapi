@@ -9,18 +9,20 @@ const Dashboard = () => {
 
   useEffect(() => {
     let user = localStorage.getItem('user');
+    let admin = false;
     if (user) {
       user = JSON.parse(user);
-      setIsAdmin(user.role >= 10);
+      admin = user.role >= 10;
     }
-    loadDashboard();
+    setIsAdmin(admin);
+    loadDashboard(admin);
   }, []);
 
-  const loadDashboard = async () => {
+  const loadDashboard = async (isAdminFlag) => {
     setLoading(true);
     try {
       let res;
-      if (isAdmin) {
+      if (isAdminFlag) {
         res = await API.get('/api/dashboard/admin');
       } else {
         res = await API.get('/api/user/usage');

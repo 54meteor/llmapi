@@ -225,21 +225,21 @@ func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatis
 }
 
 type DashboardStat struct {
-	RequestCount   int `json:"request_count"`
-	QuotaUsed      int `json:"quota_used"`
-	ActiveUsers    int `json:"active_users"`
-	ActiveChannels int `json:"active_channels"`
+	RequestCount   int64 `json:"request_count"`
+	QuotaUsed      int64 `json:"quota_used"`
+	ActiveUsers    int64 `json:"active_users"`
+	ActiveChannels int64 `json:"active_channels"`
 }
 
 type TrendStat struct {
 	Day          string `json:"day"`
-	RequestCount int    `json:"request_count"`
-	Quota        int    `json:"quota"`
+	RequestCount int64  `json:"request_count"`
+	Quota        int64  `json:"quota"`
 }
 
 type ModelStat struct {
 	Model string  `json:"model"`
-	Count int     `json:"count"`
+	Count int64   `json:"count"`
 	Ratio float64 `json:"ratio"`
 }
 
@@ -254,8 +254,8 @@ type ChannelStat struct {
 type UserStat struct {
 	UserId       int    `json:"user_id"`
 	Username     string `json:"username"`
-	QuotaUsed    int    `json:"quota_used"`
-	RequestCount int    `json:"request_count"`
+	QuotaUsed    int64  `json:"quota_used"`
+	RequestCount int64  `json:"request_count"`
 }
 
 func GetDashboardToday() (*DashboardStat, error) {
@@ -294,7 +294,7 @@ func GetDashboardTrend7Days() ([]*TrendStat, error) {
 
 	var trends []*TrendStat
 	err := DB.Raw(`
-		SELECT `+groupSelect+` as day,
+		SELECT `+groupSelect+`,
 			COUNT(1) as request_count,
 			COALESCE(SUM(quota), 0) as quota
 		FROM logs
@@ -398,8 +398,8 @@ func GetDashboardTopUsers(limit int) ([]*UserStat, error) {
 }
 
 type UserUsageStat struct {
-	TotalUsed      int          `json:"total_used"`
-	TotalRequests  int          `json:"total_requests"`
+	TotalUsed      int64        `json:"total_used"`
+	TotalRequests  int64        `json:"total_requests"`
 	QuotaRemaining int          `json:"quota_remaining"`
 	QuotaPercent   float64      `json:"quota_percent"`
 	Trend7Days     []*TrendStat `json:"trend_7days"`
@@ -411,7 +411,7 @@ func GetUserUsageStat(userId int) (*UserUsageStat, error) {
 		return nil, err
 	}
 
-	var totalUsed int
+	var totalUsed int64
 	err = DB.Model(&Log{}).Where("user_id = ? AND type = ?", userId, LogTypeConsume).Select("COALESCE(SUM(quota), 0)").Scan(&totalUsed).Error
 	if err != nil {
 		return nil, err
@@ -443,7 +443,7 @@ func GetUserUsageStat(userId int) (*UserUsageStat, error) {
 
 	var trends []*TrendStat
 	err = DB.Raw(`
-		SELECT `+groupSelect+` as day,
+		SELECT `+groupSelect+`,
 			COUNT(1) as request_count,
 			COALESCE(SUM(quota), 0) as quota
 		FROM logs
@@ -457,7 +457,7 @@ func GetUserUsageStat(userId int) (*UserUsageStat, error) {
 
 	stat := &UserUsageStat{
 		TotalUsed:      totalUsed,
-		TotalRequests:  int(totalRequests),
+		TotalRequests:  totalRequests,
 		QuotaRemaining: quotaRemaining,
 		QuotaPercent:   quotaPercent,
 		Trend7Days:     trends,
