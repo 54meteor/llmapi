@@ -321,6 +321,12 @@ func DoResponse(c *gin.Context, textRequest *openai.GeneralOpenAIRequest, resp *
 		} else {
 			err, usage = tencent.Handler(c, resp)
 		}
+	case constant.APITypeMiniMax:
+		if isStream {
+			err, responseText = openai.StreamHandler(c, resp, relayMode)
+		} else {
+			err, usage = openai.Handler(c, resp, promptTokens, textRequest.Model)
+		}
 	default:
 		return nil, openai.ErrorWrapper(errors.New("unknown api type"), "unknown_api_type", http.StatusInternalServerError)
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var SystemName = "One API"
+var SystemName = "河图"
 var ServerAddress = "http://localhost:3000"
 var Footer = ""
 var Logo = ""
@@ -31,12 +31,12 @@ var ItemsPerPage = 10
 var MaxRecentItems = 100
 
 var PasswordLoginEnabled = true
-var PasswordRegisterEnabled = true
+var PasswordRegisterEnabled = false
 var EmailVerificationEnabled = false
 var GitHubOAuthEnabled = false
 var WeChatAuthEnabled = false
 var TurnstileCheckEnabled = false
-var RegisterEnabled = true
+var RegisterEnabled = false
 
 var EmailDomainRestrictionEnabled = false
 var EmailDomainWhitelist = []string{

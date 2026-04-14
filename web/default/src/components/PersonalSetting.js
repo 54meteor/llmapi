@@ -4,20 +4,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { API, copy, showError, showInfo, showNotice, showSuccess } from '../helpers';
 import Turnstile from 'react-turnstile';
 import { UserContext } from '../context/User';
-import { onGitHubOAuthClicked } from './utils';
 
 const PersonalSetting = () => {
   const [userState, userDispatch] = useContext(UserContext);
   let navigate = useNavigate();
 
   const [inputs, setInputs] = useState({
-    wechat_verification_code: '',
     email_verification_code: '',
     email: '',
     self_account_deletion_confirmation: ''
   });
   const [status, setStatus] = useState({});
-  const [showWeChatBindModal, setShowWeChatBindModal] = useState(false);
   const [showEmailBindModal, setShowEmailBindModal] = useState(false);
   const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
@@ -117,20 +114,6 @@ const PersonalSetting = () => {
     }
   };
 
-  const bindWeChat = async () => {
-    if (inputs.wechat_verification_code === '') return;
-    const res = await API.get(
-      `/api/oauth/wechat/bind?code=${inputs.wechat_verification_code}`
-    );
-    const { success, message } = res.data;
-    if (success) {
-      showSuccess('微信账户绑定成功！');
-      setShowWeChatBindModal(false);
-    } else {
-      showError(message);
-    }
-  };
-
   const sendVerificationCode = async () => {
     setDisableButton(true);
     if (inputs.email === '') return;
@@ -202,51 +185,6 @@ const PersonalSetting = () => {
       )}
       <Divider />
       <Header as='h3'>账号绑定</Header>
-      {
-        status.wechat_login && (
-          <Button
-            onClick={() => {
-              setShowWeChatBindModal(true);
-            }}
-          >
-            绑定微信账号
-          </Button>
-        )
-      }
-      <Modal
-        onClose={() => setShowWeChatBindModal(false)}
-        onOpen={() => setShowWeChatBindModal(true)}
-        open={showWeChatBindModal}
-        size={'mini'}
-      >
-        <Modal.Content>
-          <Modal.Description>
-            <Image src={status.wechat_qrcode} fluid />
-            <div style={{ textAlign: 'center' }}>
-              <p>
-                微信扫码关注公众号，输入「验证码」获取验证码（三分钟内有效）
-              </p>
-            </div>
-            <Form size='large'>
-              <Form.Input
-                fluid
-                placeholder='验证码'
-                name='wechat_verification_code'
-                value={inputs.wechat_verification_code}
-                onChange={handleInputChange}
-              />
-              <Button color='' fluid size='large' onClick={bindWeChat}>
-                绑定
-              </Button>
-            </Form>
-          </Modal.Description>
-        </Modal.Content>
-      </Modal>
-      {
-        status.github_oauth && (
-          <Button onClick={()=>{onGitHubOAuthClicked(status.github_client_id)}}>绑定 GitHub 账号</Button>
-        )
-      }
       <Button
         onClick={() => {
           setShowEmailBindModal(true);

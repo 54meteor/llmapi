@@ -46,7 +46,12 @@ func testChannel(channel *model.Channel, request openai.ChatRequest) (err error,
 			}
 		}()
 	default:
-		request.Model = "gpt-3.5-turbo"
+		modelName, modelErr := model.GetFirstModelForChannel(channel.Id)
+		if modelErr != nil || modelName == "" {
+			request.Model = "gpt-3.5-turbo"
+		} else {
+			request.Model = modelName
+		}
 	}
 	requestURL := common.ChannelBaseURLs[channel.Type]
 	if channel.Type == common.ChannelTypeAzure {

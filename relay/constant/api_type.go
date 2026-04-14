@@ -15,6 +15,8 @@ const (
 	APITypeAIProxyLibrary
 	APITypeTencent
 	APITypeGemini
+	APITypeMiniMax
+	APITypeOpenAIOAuth
 )
 
 func ChannelType2APIType(channelType int) int {
@@ -38,6 +40,10 @@ func ChannelType2APIType(channelType int) int {
 		apiType = APITypeTencent
 	case common.ChannelTypeGemini:
 		apiType = APITypeGemini
+	case common.ChannelTypeMiniMax:
+		apiType = APITypeMiniMax
+	case common.ChannelTypeOpenAIOAuth:
+		apiType = APITypeOpenAI
 	}
 	return apiType
 }

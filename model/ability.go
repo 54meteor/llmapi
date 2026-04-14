@@ -82,3 +82,16 @@ func (channel *Channel) UpdateAbilities() error {
 func UpdateAbilityStatus(channelId int, status bool) error {
 	return DB.Model(&Ability{}).Where("channel_id = ?", channelId).Select("enabled").Update("enabled", status).Error
 }
+
+func GetFirstModelForChannel(channelId int) (string, error) {
+	var ability Ability
+	trueVal := "1"
+	if common.UsingPostgreSQL {
+		trueVal = "true"
+	}
+	err := DB.Where("channel_id = ? and enabled = "+trueVal, channelId).Order("priority desc").First(&ability).Error
+	if err != nil {
+		return "", err
+	}
+	return ability.Model, nil
+}

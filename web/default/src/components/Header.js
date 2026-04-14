@@ -50,11 +50,6 @@ let headerButtons = [
     name: '设置',
     to: '/setting',
     icon: 'setting'
-  },
-  {
-    name: '关于',
-    to: '/about',
-    icon: 'info circle'
   }
 ];
 

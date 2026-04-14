@@ -1,9 +1,9 @@
 import React, { lazy, Suspense, useContext, useEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import { Message } from 'semantic-ui-react';
 import Loading from './components/Loading';
 import User from './pages/User';
 import { PrivateRoute } from './components/PrivateRoute';
-import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import NotFound from './pages/NotFound';
 import Setting from './pages/Setting';
@@ -11,7 +11,6 @@ import EditUser from './pages/User/EditUser';
 import AddUser from './pages/User/AddUser';
 import { API, getLogo, getSystemName, showError, showNotice } from './helpers';
 import PasswordResetForm from './components/PasswordResetForm';
-import GitHubOAuth from './components/GitHubOAuth';
 import PasswordResetConfirm from './components/PasswordResetConfirm';
 import { UserContext } from './context/User';
 import { StatusContext } from './context/Status';
@@ -26,11 +25,11 @@ import Log from './pages/Log';
 import Chat from './pages/Chat';
 
 const Home = lazy(() => import('./pages/Home'));
-const About = lazy(() => import('./pages/About'));
 
 function App() {
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
+  const location = useLocation();
 
   const loadUser = () => {
     let user = localStorage.getItem('user');
@@ -71,7 +70,9 @@ function App() {
 
   useEffect(() => {
     loadUser();
-    loadStatus().then();
+    if (location.pathname !== '/login') {
+      loadStatus().then();
+    }
     let systemName = getSystemName();
     if (systemName) {
       document.title = systemName;
@@ -218,9 +219,7 @@ function App() {
       <Route
         path='/register'
         element={
-          <Suspense fallback={<Loading></Loading>}>
-            <RegisterForm />
-          </Suspense>
+          <Message negative message='自助注册已关闭，请联系管理员添加用户' />
         }
       />
       <Route
@@ -228,14 +227,6 @@ function App() {
         element={
           <Suspense fallback={<Loading></Loading>}>
             <PasswordResetForm />
-          </Suspense>
-        }
-      />
-      <Route
-        path='/oauth/github'
-        element={
-          <Suspense fallback={<Loading></Loading>}>
-            <GitHubOAuth />
           </Suspense>
         }
       />
@@ -265,14 +256,6 @@ function App() {
           <PrivateRoute>
             <Log />
           </PrivateRoute>
-        }
-      />
-      <Route
-        path='/about'
-        element={
-          <Suspense fallback={<Loading></Loading>}>
-            <About />
-          </Suspense>
         }
       />
       <Route

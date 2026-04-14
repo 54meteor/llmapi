@@ -133,6 +133,11 @@ func GetFullRequestURL(baseURL string, requestURL string, channelType int) strin
 			fullRequestURL = fmt.Sprintf("%s%s", baseURL, strings.TrimPrefix(requestURL, "/openai/deployments"))
 		}
 	}
+
+	if channelType == common.ChannelTypeMiniMax {
+		fullRequestURL = fmt.Sprintf("%s%s", baseURL, strings.Replace(requestURL, "/v1/chat/completions", "/v1/text/chatcompletion_v2", 1))
+	}
+
 	return fullRequestURL
 }
 

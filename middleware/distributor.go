@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"one-api/common"
@@ -10,7 +11,36 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 )
+
+type OpenAIOAuthToken struct {
+	AccessToken string `json:"access_token"`
+	ExpiresAt   int64  `json:"expires_at"`
+}
+
+func getOpenAIAccessToken(key string) string {
+	parts := strings.Split(key, ".")
+	if len(parts) != 3 {
+		logger.SysError("invalid OpenAI OAuth key format")
+		return key
+	}
+	padding := 4 - len(parts[1])%4
+	if padding != 4 {
+		parts[1] += strings.Repeat("=", padding)
+	}
+	payload, err := jwt.DecodeSegment(parts[1])
+	if err != nil {
+		logger.SysError("failed to decode JWT payload: " + err.Error())
+		return key
+	}
+	var token OpenAIOAuthToken
+	if err := json.Unmarshal(payload, &token); err != nil {
+		logger.SysError("failed to parse OAuth token: " + err.Error())
+		return key
+	}
+	return token.AccessToken
+}
 
 type ModelRequest struct {
 	Model string `json:"model"`
@@ -81,7 +111,11 @@ func Distribute() func(c *gin.Context) {
 		c.Set("channel_id", channel.Id)
 		c.Set("channel_name", channel.Name)
 		c.Set("model_mapping", channel.GetModelMapping())
-		c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
+		apiKey := channel.Key
+		if channel.Type == common.ChannelTypeOpenAIOAuth {
+			apiKey = getOpenAIAccessToken(apiKey)
+		}
+		c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
 		c.Set("base_url", channel.GetBaseURL())
 		switch channel.Type {
 		case common.ChannelTypeAzure:

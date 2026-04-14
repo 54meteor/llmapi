@@ -63,6 +63,8 @@ const (
 	ChannelTypeFastGPT        = 22
 	ChannelTypeTencent        = 23
 	ChannelTypeGemini         = 24
+	ChannelTypeMiniMax        = 27
+	ChannelTypeOpenAIOAuth    = 28
 )
 
 var ChannelBaseURLs = []string{
@@ -91,4 +93,8 @@ var ChannelBaseURLs = []string{
 	"https://fastgpt.run/api/openapi",           // 22
 	"https://hunyuan.cloud.tencent.com",         // 23
 	"https://generativelanguage.googleapis.com", // 24
+	"",                       // 25
+	"",                       // 26
+	"https://api.minimax.io", // 27
+	"https://api.openai.com", // 28
 }
