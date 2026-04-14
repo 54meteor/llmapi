@@ -197,3 +197,15 @@ export function shouldShowPrompt(id) {
 export function setPromptShown(id) {
   localStorage.setItem(`prompt-${id}`, 'true');
 }
+
+export function quota2string(quota) {
+  if (!quota) return '0';
+  if (quota < 1024) return quota.toString();
+  if (quota < 1024 * 1024) {
+    return (quota / 1024).toFixed(2) + 'K';
+  }
+  if (quota < 1024 * 1024 * 1024) {
+    return (quota / 1024 / 1024).toFixed(2) + 'M';
+  }
+  return (quota / 1024 / 1024 / 1024).toFixed(2) + 'G';
+}

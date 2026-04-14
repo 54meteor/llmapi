@@ -24,7 +24,7 @@ import TopUp from './pages/TopUp';
 import Log from './pages/Log';
 import Chat from './pages/Chat';
 
-const Home = lazy(() => import('./pages/Home'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 function App() {
   const [userState, userDispatch] = useContext(UserContext);
@@ -92,7 +92,7 @@ function App() {
         path='/'
         element={
           <Suspense fallback={<Loading></Loading>}>
-            <Home />
+            <Dashboard />
           </Suspense>
         }
       />

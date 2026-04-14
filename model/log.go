@@ -223,3 +223,245 @@ func SearchLogsByDayAndModel(userId, start, end int) (LogStatistics []*LogStatis
 
 	return LogStatistics, err
 }
+
+type DashboardStat struct {
+	RequestCount   int `json:"request_count"`
+	QuotaUsed      int `json:"quota_used"`
+	ActiveUsers    int `json:"active_users"`
+	ActiveChannels int `json:"active_channels"`
+}
+
+type TrendStat struct {
+	Day          string `json:"day"`
+	RequestCount int    `json:"request_count"`
+	Quota        int    `json:"quota"`
+}
+
+type ModelStat struct {
+	Model string  `json:"model"`
+	Count int     `json:"count"`
+	Ratio float64 `json:"ratio"`
+}
+
+type ChannelStat struct {
+	ChannelId       int     `json:"channel_id"`
+	Name            string  `json:"name"`
+	SuccessRate     float64 `json:"success_rate"`
+	AvgResponseTime int     `json:"avg_response_time"`
+	Balance         float64 `json:"balance"`
+}
+
+type UserStat struct {
+	UserId       int    `json:"user_id"`
+	Username     string `json:"username"`
+	QuotaUsed    int    `json:"quota_used"`
+	RequestCount int    `json:"request_count"`
+}
+
+func GetDashboardToday() (*DashboardStat, error) {
+	now := helper.GetTimestamp()
+	startOfDay := now - int64((now % 86400))
+	endOfDay := startOfDay + 86400 - 1
+
+	var stat DashboardStat
+	var err error
+
+	err = DB.Raw(`
+		SELECT
+			COUNT(1) as request_count,
+			COALESCE(SUM(quota), 0) as quota_used,
+			COUNT(DISTINCT user_id) as active_users,
+			COUNT(DISTINCT channel_id) as active_channels
+		FROM logs
+		WHERE type = ? AND created_at >= ? AND created_at <= ?
+	`, LogTypeConsume, startOfDay, endOfDay).Scan(&stat).Error
+
+	return &stat, err
+}
+
+func GetDashboardTrend7Days() ([]*TrendStat, error) {
+	now := helper.GetTimestamp()
+	startOfDay := now - int64(7*86400)
+	startOfDay = startOfDay - (startOfDay % 86400)
+
+	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
+	if common.UsingPostgreSQL {
+		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
+	}
+	if common.UsingSQLite {
+		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch')) as day"
+	}
+
+	var trends []*TrendStat
+	err := DB.Raw(`
+		SELECT `+groupSelect+` as day,
+			COUNT(1) as request_count,
+			COALESCE(SUM(quota), 0) as quota
+		FROM logs
+		WHERE type = ? AND created_at >= ?
+		GROUP BY day
+		ORDER BY day ASC
+	`, LogTypeConsume, startOfDay).Scan(&trends).Error
+
+	return trends, err
+}
+
+func GetDashboardModelDistribution() ([]*ModelStat, error) {
+	var total int64
+	err := DB.Model(&Log{}).Where("type = ?", LogTypeConsume).Count(&total).Error
+	if err != nil || total == 0 {
+		return nil, err
+	}
+
+	var stats []*ModelStat
+	err = DB.Raw(`
+		SELECT model_name as model, COUNT(1) as count
+		FROM logs
+		WHERE type = ?
+		GROUP BY model_name
+		ORDER BY count DESC
+		LIMIT 10
+	`, LogTypeConsume).Scan(&stats).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, stat := range stats {
+		stat.Ratio = float64(stat.Count) / float64(total)
+	}
+
+	return stats, err
+}
+
+func GetDashboardChannelHealth() ([]*ChannelStat, error) {
+	var channels []*Channel
+	err := DB.Select("id", "name", "response_time", "balance").Find(&channels).Error
+	if err != nil {
+		return nil, err
+	}
+
+	now := helper.GetTimestamp()
+	startOfDay := now - int64(now%86400)
+
+	type channelLogStat struct {
+		ChannelId  int `json:"channel_id"`
+		RequestCnt int `json:"request_cnt"`
+	}
+	var logStats []channelLogStat
+	err = DB.Raw(`
+		SELECT channel_id as channel_id, COUNT(1) as request_cnt
+		FROM logs
+		WHERE type = ? AND created_at >= ?
+		GROUP BY channel_id
+	`, LogTypeConsume, startOfDay).Scan(&logStats).Error
+	if err != nil {
+		return nil, err
+	}
+
+	totalByChannel := make(map[int]int)
+	for _, ls := range logStats {
+		totalByChannel[ls.ChannelId] = ls.RequestCnt
+	}
+
+	var stats []*ChannelStat
+	for _, ch := range channels {
+		stat := &ChannelStat{
+			ChannelId:       ch.Id,
+			Name:            ch.Name,
+			AvgResponseTime: ch.ResponseTime,
+			Balance:         ch.Balance,
+			SuccessRate:     1.0,
+		}
+		if cnt, ok := totalByChannel[ch.Id]; ok && cnt > 0 {
+			stat.SuccessRate = 1.0
+		}
+		stats = append(stats, stat)
+	}
+
+	return stats, nil
+}
+
+func GetDashboardTopUsers(limit int) ([]*UserStat, error) {
+	var stats []*UserStat
+	err := DB.Raw(`
+		SELECT user_id, username,
+			COALESCE(SUM(quota), 0) as quota_used,
+			COUNT(1) as request_count
+		FROM logs
+		WHERE type = ?
+		GROUP BY user_id, username
+		ORDER BY quota_used DESC
+		LIMIT ?
+	`, LogTypeConsume, limit).Scan(&stats).Error
+
+	return stats, err
+}
+
+type UserUsageStat struct {
+	TotalUsed      int          `json:"total_used"`
+	TotalRequests  int          `json:"total_requests"`
+	QuotaRemaining int          `json:"quota_remaining"`
+	QuotaPercent   float64      `json:"quota_percent"`
+	Trend7Days     []*TrendStat `json:"trend_7days"`
+}
+
+func GetUserUsageStat(userId int) (*UserUsageStat, error) {
+	user, err := GetUserById(userId, false)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalUsed int
+	err = DB.Model(&Log{}).Where("user_id = ? AND type = ?", userId, LogTypeConsume).Select("COALESCE(SUM(quota), 0)").Scan(&totalUsed).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var totalRequests int64
+	err = DB.Model(&Log{}).Where("user_id = ? AND type = ?", userId, LogTypeConsume).Count(&totalRequests).Error
+	if err != nil {
+		return nil, err
+	}
+
+	quotaRemaining := user.Quota
+	quotaPercent := 0.0
+	if user.Quota > 0 {
+		quotaPercent = float64(totalUsed) / float64(user.Quota)
+	}
+
+	now := helper.GetTimestamp()
+	startOfDay := now - int64(7*86400)
+	startOfDay = startOfDay - (startOfDay % 86400)
+
+	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
+	if common.UsingPostgreSQL {
+		groupSelect = "TO_CHAR(date_trunc('day', to_timestamp(created_at)), 'YYYY-MM-DD') as day"
+	}
+	if common.UsingSQLite {
+		groupSelect = "strftime('%Y-%m-%d', datetime(created_at, 'unixepoch')) as day"
+	}
+
+	var trends []*TrendStat
+	err = DB.Raw(`
+		SELECT `+groupSelect+` as day,
+			COUNT(1) as request_count,
+			COALESCE(SUM(quota), 0) as quota
+		FROM logs
+		WHERE type = ? AND user_id = ? AND created_at >= ?
+		GROUP BY day
+		ORDER BY day ASC
+	`, LogTypeConsume, userId, startOfDay).Scan(&trends).Error
+	if err != nil {
+		return nil, err
+	}
+
+	stat := &UserUsageStat{
+		TotalUsed:      totalUsed,
+		TotalRequests:  int(totalRequests),
+		QuotaRemaining: quotaRemaining,
+		QuotaPercent:   quotaPercent,
+		Trend7Days:     trends,
+	}
+
+	return stat, nil
+}

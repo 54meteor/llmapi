@@ -36,6 +36,7 @@ func SetApiRouter(router *gin.Engine) {
 			selfRoute.Use(middleware.UserAuth())
 			{
 				selfRoute.GET("/dashboard", controller.GetUserDashboard)
+				selfRoute.GET("/usage", controller.GetUserUsage)
 				selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.PUT("/self", controller.UpdateSelf)
 				selfRoute.DELETE("/self", controller.DeleteSelf)
@@ -106,6 +107,8 @@ func SetApiRouter(router *gin.Engine) {
 		logRoute.GET("/search", middleware.AdminAuth(), controller.SearchAllLogs)
 		logRoute.GET("/self", middleware.UserAuth(), controller.GetUserLogs)
 		logRoute.GET("/self/search", middleware.UserAuth(), controller.SearchUserLogs)
+		dashboardRoute := apiRouter.Group("/dashboard")
+		dashboardRoute.GET("/admin", middleware.AdminAuth(), controller.GetDashboardAdmin)
 		groupRoute := apiRouter.Group("/group")
 		groupRoute.Use(middleware.AdminAuth())
 		{

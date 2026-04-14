@@ -166,3 +166,82 @@ func DeleteHistoryLogs(c *gin.Context) {
 	})
 	return
 }
+
+func GetDashboardAdmin(c *gin.Context) {
+	today, err := model.GetDashboardToday()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	trend7days, err := model.GetDashboardTrend7Days()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	modelDistribution, err := model.GetDashboardModelDistribution()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	channelHealth, err := model.GetDashboardChannelHealth()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	topUsers, err := model.GetDashboardTopUsers(10)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"today":              today,
+			"trend_7days":        trend7days,
+			"model_distribution": modelDistribution,
+			"channel_health":     channelHealth,
+			"top_users":          topUsers,
+		},
+	})
+	return
+}
+
+func GetUserUsage(c *gin.Context) {
+	userId := c.GetInt("id")
+	stat, err := model.GetUserUsageStat(userId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    stat,
+	})
+	return
+}
