@@ -7,6 +7,7 @@ import (
 	"one-api/common/config"
 	"one-api/common/helper"
 	"one-api/common/logger"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -259,9 +260,10 @@ type UserStat struct {
 }
 
 func GetDashboardToday() (*DashboardStat, error) {
-	now := helper.GetTimestamp()
-	startOfDay := now - int64((now % 86400))
-	endOfDay := startOfDay + 86400 - 1
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	now := time.Now().In(loc)
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).Unix()
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, loc).Unix()
 
 	var stat DashboardStat
 	var err error
@@ -280,9 +282,9 @@ func GetDashboardToday() (*DashboardStat, error) {
 }
 
 func GetDashboardTrend7Days() ([]*TrendStat, error) {
-	now := helper.GetTimestamp()
-	startOfDay := now - int64(7*86400)
-	startOfDay = startOfDay - (startOfDay % 86400)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	now := time.Now().In(loc)
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, -6).Unix()
 
 	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
 	if common.UsingPostgreSQL {
@@ -340,8 +342,9 @@ func GetDashboardChannelHealth() ([]*ChannelStat, error) {
 		return nil, err
 	}
 
-	now := helper.GetTimestamp()
-	startOfDay := now - int64(now%86400)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	now := time.Now().In(loc)
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).Unix()
 
 	type channelLogStat struct {
 		ChannelId  int `json:"channel_id"`
@@ -429,9 +432,9 @@ func GetUserUsageStat(userId int) (*UserUsageStat, error) {
 		quotaPercent = float64(totalUsed) / float64(user.Quota)
 	}
 
-	now := helper.GetTimestamp()
-	startOfDay := now - int64(7*86400)
-	startOfDay = startOfDay - (startOfDay % 86400)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	now := time.Now().In(loc)
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, -6).Unix()
 
 	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
 	if common.UsingPostgreSQL {
