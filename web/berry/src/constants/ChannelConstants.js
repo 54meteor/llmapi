@@ -142,5 +142,17 @@ export const CHANNEL_OPTIONS = {
     text: '代理：AIGC2D',
     value: 13,
     color: 'primary'
+  },
+  29: {
+    key: 29,
+    text: 'Seedream 火山方舟',
+    value: 29,
+    color: 'error'
+  },
+  30: {
+    key: 30,
+    text: 'DashScope 阿里百炼',
+    value: 30,
+    color: 'warning'
   }
 };

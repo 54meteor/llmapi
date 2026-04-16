@@ -41,20 +41,20 @@ var DalleSizeRatios = map[string]map[string]float64{
 }
 
 var DalleGenerationImageAmounts = map[string][2]int{
-	"dall-e-2":                    {1, 10},
-	"dall-e-3":                    {1, 1}, // OpenAI allows n=1 currently.
-	"doubao-seedream-5-0-260128":   {1, 4},
-	"doubao-seedream-4-5-251128":   {1, 4},
-	"doubao-seedream-4-0-250828":   {1, 4},
+	"dall-e-2":                       {1, 10},
+	"dall-e-3":                       {1, 1}, // OpenAI allows n=1 currently.
+	"doubao-seedream-5-0-260128":     {1, 4},
+	"doubao-seedream-4-5-251128":     {1, 4},
+	"doubao-seedream-4-0-250828":     {1, 4},
 	"doubao-seedream-3-0-t2i-250415": {1, 1},
 }
 
 var DalleImagePromptLengthLimitations = map[string]int{
-	"dall-e-2":                    1000,
-	"dall-e-3":                    4000,
-	"doubao-seedream-5-0-260128":   4000,
-	"doubao-seedream-4-5-251128":   4000,
-	"doubao-seedream-4-0-250828":   4000,
+	"dall-e-2":                       1000,
+	"dall-e-3":                       4000,
+	"doubao-seedream-5-0-260128":     4000,
+	"doubao-seedream-4-5-251128":     4000,
+	"doubao-seedream-4-0-250828":     4000,
 	"doubao-seedream-3-0-t2i-250415": 2000,
 }
 
@@ -125,6 +125,7 @@ var ModelRatio = map[string]float64{
 	"qwen-max":                       1.4286, // ￥0.02 / 1k tokens
 	"qwen-max-longcontext":           1.4286, // ￥0.02 / 1k tokens
 	"text-embedding-v1":              0.05,   // ￥0.0007 / 1k tokens
+	"text-embedding-v2":              0.1,    // DashScope
 	"SparkDesk":                      1.2858, // ￥0.018 / 1k tokens
 	"360GPT_S2_V9":                   0.8572, // ¥0.012 / 1k tokens
 	"embedding-bert-512-v1":          0.0715, // ¥0.001 / 1k tokens

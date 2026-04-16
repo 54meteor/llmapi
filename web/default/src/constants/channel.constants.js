@@ -23,5 +23,6 @@ export const CHANNEL_OPTIONS = [
   { key: 9, text: '代理：AI.LS', value: 9, color: 'yellow' },
   { key: 12, text: '代理：API2GPT', value: 12, color: 'blue' },
   { key: 13, text: '代理：AIGC2D', value: 13, color: 'purple' },
-  { key: 29, text: 'Seedream 火山方舟', value: 29, color: 'red' }
+  { key: 29, text: 'Seedream 火山方舟', value: 29, color: 'red' },
+  { key: 30, text: 'DashScope 阿里百炼', value: 30, color: 'orange' }
 ];
