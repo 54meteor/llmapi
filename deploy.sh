@@ -17,4 +17,4 @@ cp -r web/default/build/* web/build/default/
 
 echo "=== Build complete ==="
 echo "To run the server:"
-echo "  SQL_DSN='postgres://user:pass@localhost:5432/one_api' ./one_api --port 3001"
+echo "  SQL_DSN='postgres://postgres:123456@192.168.240.1:5432/oneapi?sslmode=disable' ./one_api"

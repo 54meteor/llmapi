@@ -2,6 +2,7 @@
   "name": "react-template",
   "version": "0.1.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "axios": "^0.27.2",
     "history": "^5.3.0",
@@ -18,7 +19,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && mv -f build ../build/default",
+    "build": "react-scripts build && rm -rf ../build/default && cp -r build ../build/default",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
