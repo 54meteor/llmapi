@@ -295,13 +295,18 @@ const LogsTable = () => {
                 模型
               </Table.HeaderCell>
               <Table.HeaderCell
+                width={1}
+              >
+                倍率
+              </Table.HeaderCell>
+              <Table.HeaderCell
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
                   sortLog('prompt_tokens');
                 }}
                 width={1}
               >
-                提示
+                输入
               </Table.HeaderCell>
               <Table.HeaderCell
                 style={{ cursor: 'pointer' }}
@@ -310,7 +315,7 @@ const LogsTable = () => {
                 }}
                 width={1}
               >
-                补全
+                输出
               </Table.HeaderCell>
               <Table.HeaderCell
                 style={{ cursor: 'pointer' }}
@@ -357,6 +362,7 @@ const LogsTable = () => {
                     <Table.Cell>{log.token_name ? <Label basic>{log.token_name}</Label> : ''}</Table.Cell>
                     <Table.Cell>{renderType(log.type)}</Table.Cell>
                     <Table.Cell>{log.model_name ? <Label basic>{log.model_name}</Label> : ''}</Table.Cell>
+                    <Table.Cell>-</Table.Cell>
                     <Table.Cell>{log.prompt_tokens ? log.prompt_tokens : ''}</Table.Cell>
                     <Table.Cell>{log.completion_tokens ? log.completion_tokens : ''}</Table.Cell>
                     <Table.Cell>{log.quota ? renderQuota(log.quota, 6) : ''}</Table.Cell>
@@ -368,7 +374,7 @@ const LogsTable = () => {
 
           <Table.Footer>
             <Table.Row>
-              <Table.HeaderCell colSpan={'10'}>
+              <Table.HeaderCell colSpan={'11'}>
                 <Select
                   placeholder='选择明细分类'
                   options={LOG_OPTIONS}
