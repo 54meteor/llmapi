@@ -27,10 +27,10 @@ const EditUser = () => {
   const fetchGroups = async () => {
     try {
       let res = await API.get(`/api/group/`);
-      setGroupOptions(res.data.data.map((group) => ({
-        key: group,
-        text: group,
-        value: group,
+      setGroupOptions(res.data.data.map((g) => ({
+        key: g.id,
+        text: g.name,
+        value: g.name,
       })));
     } catch (error) {
       showError(error.message);

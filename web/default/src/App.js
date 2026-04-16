@@ -15,6 +15,7 @@ import PasswordResetConfirm from './components/PasswordResetConfirm';
 import { UserContext } from './context/User';
 import { StatusContext } from './context/Status';
 import Channel from './pages/Channel';
+import Group from './pages/Group';
 import Token from './pages/Token';
 import EditToken from './pages/Token/EditToken';
 import EditChannel from './pages/Channel/EditChannel';
@@ -101,6 +102,14 @@ function App() {
         element={
           <PrivateRoute>
             <Channel />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path='/group'
+        element={
+          <PrivateRoute>
+            <Group />
           </PrivateRoute>
         }
       />

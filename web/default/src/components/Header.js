@@ -20,6 +20,12 @@ let headerButtons = [
     admin: true
   },
   {
+    name: '分组',
+    to: '/group',
+    icon: 'users',
+    admin: true
+  },
+  {
     name: '令牌',
     to: '/token',
     icon: 'key'
