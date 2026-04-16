@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -17,9 +16,6 @@ import (
 	"os"
 	"strconv"
 )
-
-//go:embed web/build/*
-var buildFS embed.FS
 
 func main() {
 	logger.SetupLogger()
@@ -96,7 +92,7 @@ func main() {
 	store := cookie.NewStore([]byte(config.SessionSecret))
 	server.Use(sessions.Sessions("session", store))
 
-	router.SetRouter(server, buildFS)
+	router.SetRouter(server)
 	var port = os.Getenv("PORT")
 	if port == "" {
 		port = strconv.Itoa(*common.Port)

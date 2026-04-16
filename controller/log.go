@@ -168,6 +168,16 @@ func DeleteHistoryLogs(c *gin.Context) {
 }
 
 func GetDashboardAdmin(c *gin.Context) {
+	userId := c.GetInt("id")
+	user, err := model.GetUserById(userId, true)
+	if err != nil || user.Role < 10 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "权限不足",
+		})
+		return
+	}
+
 	today, err := model.GetDashboardToday()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{

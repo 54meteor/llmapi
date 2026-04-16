@@ -7,11 +7,11 @@ import (
 	"one-api/common"
 	"one-api/common/config"
 	"one-api/common/helper"
+	"one-api/middleware"
 	"one-api/model"
 	"strconv"
 	"time"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -61,17 +61,11 @@ func Login(c *gin.Context) {
 	setupLogin(&user, c)
 }
 
-// setup session & cookies and then return user info
 func setupLogin(user *model.User, c *gin.Context) {
-	session := sessions.Default(c)
-	session.Set("id", user.Id)
-	session.Set("username", user.Username)
-	session.Set("role", user.Role)
-	session.Set("status", user.Status)
-	err := session.Save()
+	token, err := middleware.GenerateToken(user)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "无法保存会话信息，请重试",
+			"message": "生成 token 失败",
 			"success": false,
 		})
 		return
@@ -86,23 +80,16 @@ func setupLogin(user *model.User, c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "",
 		"success": true,
-		"data":    cleanUser,
+		"data": gin.H{
+			"token": token,
+			"user":  cleanUser,
+		},
 	})
 }
 
 func Logout(c *gin.Context) {
-	session := sessions.Default(c)
-	session.Clear()
-	err := session.Save()
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
-		return
-	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "",
+		"message": "已退出登录",
 		"success": true,
 	})
 }

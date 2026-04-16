@@ -42,8 +42,11 @@ const LoginForm = () => {
       });
       const { success, message, data } = res.data;
       if (success) {
-        userDispatch({ type: 'login', payload: data });
-        localStorage.setItem('user', JSON.stringify(data));
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
+        userDispatch({ type: 'login', payload: data.user });
+        localStorage.setItem('user', JSON.stringify(data.user));
         if (username === 'root' && password === '123456') {
           navigate('/user/edit');
           showSuccess('登录成功！');

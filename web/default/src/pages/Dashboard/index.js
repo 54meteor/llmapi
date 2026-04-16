@@ -1,22 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Card, Grid, Header, Segment, Table, Progress, List } from 'semantic-ui-react';
 import { API, showError, quota2string } from '../../helpers';
+import { UserContext } from '../../context/User';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userState] = useContext(UserContext);
 
   useEffect(() => {
-    let user = localStorage.getItem('user');
-    let admin = false;
-    if (user) {
-      user = JSON.parse(user);
-      admin = user.role >= 10;
-    }
-    setIsAdmin(admin);
-    loadDashboard(admin);
-  }, []);
+    const isAdminFlag = userState.user && userState.user.role >= 10;
+    setIsAdmin(isAdminFlag);
+    loadDashboard(isAdminFlag);
+  }, [userState]);
 
   const loadDashboard = async (isAdminFlag) => {
     setLoading(true);

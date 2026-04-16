@@ -15,8 +15,25 @@ func authHelper(c *gin.Context, minRole int) {
 	role := session.Get("role")
 	id := session.Get("id")
 	status := session.Get("status")
+
 	if username == nil {
-		// Check access token
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			claims, err := ParseToken(tokenString)
+			if err == nil {
+				user, err := model.GetUserById(claims.UserId, false)
+				if err == nil && user.Status != common.UserStatusDisabled {
+					username = user.Username
+					role = user.Role
+					id = user.Id
+					status = user.Status
+				}
+			}
+		}
+	}
+
+	if username == nil {
 		accessToken := c.Request.Header.Get("Authorization")
 		if accessToken == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -28,7 +45,6 @@ func authHelper(c *gin.Context, minRole int) {
 		}
 		user := model.ValidateAccessToken(accessToken)
 		if user != nil && user.Username != "" {
-			// Token is valid
 			username = user.Username
 			role = user.Role
 			id = user.Id
@@ -42,7 +58,9 @@ func authHelper(c *gin.Context, minRole int) {
 			return
 		}
 	}
-	if status.(int) == common.UserStatusDisabled {
+
+	statusVal, _ := status.(int)
+	if statusVal == common.UserStatusDisabled {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "用户已被封禁",
@@ -50,7 +68,8 @@ func authHelper(c *gin.Context, minRole int) {
 		c.Abort()
 		return
 	}
-	if role.(int) < minRole {
+	roleVal, _ := role.(int)
+	if roleVal < minRole {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "无权进行此操作，权限不足",

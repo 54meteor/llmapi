@@ -12,6 +12,7 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter := router.Group("/api")
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
+	apiRouter.Use(middleware.CORS())
 	{
 		apiRouter.GET("/status", middleware.UserAuth(), controller.GetStatus)
 		apiRouter.GET("/notice", middleware.UserAuth(), controller.GetNotice)

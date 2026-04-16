@@ -1,7 +1,6 @@
 package router
 
 import (
-	"embed"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 	"strings"
 )
 
-func SetRouter(router *gin.Engine, buildFS embed.FS) {
+func SetRouter(router *gin.Engine) {
 	SetApiRouter(router)
 	SetDashboardRouter(router)
 	SetRelayRouter(router)
@@ -21,7 +20,7 @@ func SetRouter(router *gin.Engine, buildFS embed.FS) {
 		logger.SysLog("FRONTEND_BASE_URL is ignored on master node")
 	}
 	if frontendBaseUrl == "" {
-		SetWebRouter(router, buildFS)
+		SetWebRouter(router)
 	} else {
 		frontendBaseUrl = strings.TrimSuffix(frontendBaseUrl, "/")
 		router.NoRoute(func(c *gin.Context) {

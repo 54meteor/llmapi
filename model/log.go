@@ -265,10 +265,12 @@ func GetDashboardToday() (*DashboardStat, error) {
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).Unix()
 	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, loc).Unix()
 
+	logger.Info(context.Background(), fmt.Sprintf("[GetDashboardToday] startOfDay=%d, endOfDay=%d", startOfDay, endOfDay))
+
 	var stat DashboardStat
 	var err error
 
-	err = DB.Raw(`
+	sql := `
 		SELECT
 			COUNT(1) as request_count,
 			COALESCE(SUM(quota), 0) as quota_used,
@@ -276,7 +278,11 @@ func GetDashboardToday() (*DashboardStat, error) {
 			COUNT(DISTINCT channel_id) as active_channels
 		FROM logs
 		WHERE type = ? AND created_at >= ? AND created_at <= ?
-	`, LogTypeConsume, startOfDay, endOfDay).Scan(&stat).Error
+	`
+	logger.Info(context.Background(), fmt.Sprintf("[GetDashboardToday] SQL: %s, args: %d, %d, %d", sql, LogTypeConsume, startOfDay, endOfDay))
+
+	err = DB.Raw(sql, LogTypeConsume, startOfDay, endOfDay).Scan(&stat).Error
+	logger.Info(context.Background(), fmt.Sprintf("[GetDashboardToday] Result: %+v, err: %v", stat, err))
 
 	return &stat, err
 }
@@ -285,6 +291,8 @@ func GetDashboardTrend7Days() ([]*TrendStat, error) {
 	loc, _ := time.LoadLocation("Asia/Shanghai")
 	now := time.Now().In(loc)
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, -6).Unix()
+
+	logger.Info(context.Background(), fmt.Sprintf("[GetDashboardTrend7Days] startOfDay=%d", startOfDay))
 
 	groupSelect := "DATE_FORMAT(FROM_UNIXTIME(created_at), '%Y-%m-%d') as day"
 	if common.UsingPostgreSQL {
@@ -295,15 +303,19 @@ func GetDashboardTrend7Days() ([]*TrendStat, error) {
 	}
 
 	var trends []*TrendStat
-	err := DB.Raw(`
-		SELECT `+groupSelect+`,
+	sql := `
+		SELECT ` + groupSelect + `,
 			COUNT(1) as request_count,
 			COALESCE(SUM(quota), 0) as quota
 		FROM logs
 		WHERE type = ? AND created_at >= ?
 		GROUP BY day
 		ORDER BY day ASC
-	`, LogTypeConsume, startOfDay).Scan(&trends).Error
+	`
+	logger.Info(context.Background(), fmt.Sprintf("[GetDashboardTrend7Days] SQL: %s, args: %d, %d", sql, LogTypeConsume, startOfDay))
+
+	err := DB.Raw(sql, LogTypeConsume, startOfDay).Scan(&trends).Error
+	logger.Info(context.Background(), fmt.Sprintf("[GetDashboardTrend7Days] Result count: %d, err: %v", len(trends), err))
 
 	return trends, err
 }
