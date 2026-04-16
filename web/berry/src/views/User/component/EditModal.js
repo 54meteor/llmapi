@@ -109,7 +109,9 @@ const EditModal = ({ open, userId, onCancel, onOk }) => {
   const fetchGroups = async () => {
     try {
       let res = await API.get(`/api/group/`);
-      setGroupOptions(res.data.data);
+      if (res.data.success) {
+        setGroupOptions(res.data.data.map(g => g.name));
+      }
     } catch (error) {
       showError(error.message);
     }

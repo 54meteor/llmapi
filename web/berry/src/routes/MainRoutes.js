@@ -5,6 +5,7 @@ import MainLayout from 'layout/MainLayout';
 import Loadable from 'ui-component/Loadable';
 
 const Channel = Loadable(lazy(() => import('views/Channel')));
+const Group = Loadable(lazy(() => import('views/Group')));
 const Log = Loadable(lazy(() => import('views/Log')));
 const Redemption = Loadable(lazy(() => import('views/Redemption')));
 const Setting = Loadable(lazy(() => import('views/Setting')));
@@ -34,6 +35,10 @@ const MainRoutes = {
     {
       path: 'channel',
       element: <Channel />
+    },
+    {
+      path: 'group',
+      element: <Group />
     },
     {
       path: 'log',
