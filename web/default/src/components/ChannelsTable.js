@@ -112,12 +112,6 @@ const ChannelsTable = () => {
         data.status = 2;
         res = await API.put('/api/channel/', data);
         break;
-      case 'priority':
-        if (value === '') {
-          return;
-        }
-        data.priority = parseInt(value);
-        res = await API.put('/api/channel/', data);
         break;
       case 'weight':
         if (value === '') {
@@ -388,14 +382,6 @@ const ChannelsTable = () => {
             >
               余额
             </Table.HeaderCell>
-            <Table.HeaderCell
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                sortChannel('priority');
-              }}
-            >
-              优先级
-            </Table.HeaderCell>
             <Table.HeaderCell>计费方式</Table.HeaderCell>
             <Table.HeaderCell>操作</Table.HeaderCell>
           </Table.Row>
@@ -432,22 +418,6 @@ const ChannelsTable = () => {
                       {renderBalance(channel.type, channel.balance)}
                     </span>}
                       content='点击更新'
-                      basic
-                    />
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Popup
-                      trigger={<Input type='number' defaultValue={channel.priority} onBlur={(event) => {
-                        manageChannel(
-                          channel.id,
-                          'priority',
-                          idx,
-                          event.target.value
-                        );
-                      }}>
-                        <input style={{ maxWidth: '60px' }} />
-                      </Input>}
-                      content='渠道选择优先级，越高越优先'
                       basic
                     />
                   </Table.Cell>
