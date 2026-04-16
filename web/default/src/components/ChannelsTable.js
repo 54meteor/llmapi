@@ -396,6 +396,7 @@ const ChannelsTable = () => {
             >
               优先级
             </Table.HeaderCell>
+            <Table.HeaderCell>计费方式</Table.HeaderCell>
             <Table.HeaderCell>操作</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
@@ -449,6 +450,9 @@ const ChannelsTable = () => {
                       content='渠道选择优先级，越高越优先'
                       basic
                     />
+                  </Table.Cell>
+                  <Table.Cell>
+                    {channel.billing_mode === 'count' ? '按次数' : '按 Token'}
                   </Table.Cell>
                   <Table.Cell>
                     <div>

@@ -69,6 +69,11 @@ const (
 	ChannelTypeDashScope      = 30
 )
 
+const (
+	BillingModeToken = "token"
+	BillingModeCount = "count"
+)
+
 var ChannelBaseURLs = []string{
 	"",                              // 0
 	"https://api.openai.com",        // 1

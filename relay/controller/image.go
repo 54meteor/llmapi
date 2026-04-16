@@ -138,7 +138,21 @@ func RelayImageHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 	ratio := modelRatio * groupRatio
 	userQuota, err := model.CacheGetUserQuota(userId)
 
-	quota := int(ratio*imageCostRatio*1000) * imageRequest.N
+	billingMode := c.GetString("billing_mode")
+	if billingMode == "" {
+		billingMode = common.BillingModeToken
+	}
+	countRatio := c.GetFloat64("count_ratio")
+	if countRatio == 0 {
+		countRatio = 1.0
+	}
+
+	var quota int
+	if billingMode == common.BillingModeCount {
+		quota = int(countRatio) * imageRequest.N
+	} else {
+		quota = int(ratio*imageCostRatio*1000) * imageRequest.N
+	}
 
 	if userQuota-quota < 0 {
 		return openai.ErrorWrapper(errors.New("user quota is not enough"), "insufficient_user_quota", http.StatusForbidden)

@@ -60,7 +60,13 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 	modelRatio := common.GetModelRatio(textRequest.Model)
 	groupRatio := common.GetGroupRatio(meta.Group)
 	ratio := modelRatio * groupRatio
-	preConsumedQuota := int(float64(preConsumedTokens) * ratio)
+
+	var preConsumedQuota int
+	if meta.BillingMode == common.BillingModeCount {
+		preConsumedQuota = int(meta.CountRatio)
+	} else {
+		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
+	}
 	userQuota, err := model.CacheGetUserQuota(meta.UserId)
 	if err != nil {
 		return openai.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
@@ -138,7 +144,12 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 			completionRatio := common.GetCompletionRatio(textRequest.Model)
 			promptTokens = usage.PromptTokens
 			completionTokens = usage.CompletionTokens
-			quota = int(math.Ceil((float64(promptTokens) + float64(completionTokens)*completionRatio) * ratio))
+
+			if meta.BillingMode == common.BillingModeCount {
+				quota = int(meta.CountRatio)
+			} else {
+				quota = int(math.Ceil((float64(promptTokens) + float64(completionTokens)*completionRatio) * ratio))
+			}
 			if ratio != 0 && quota <= 0 {
 				quota = 1
 			}

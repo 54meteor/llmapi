@@ -18,6 +18,8 @@ type RelayMeta struct {
 	APIVersion   string
 	APIKey       string
 	Config       map[string]string
+	BillingMode  string
+	CountRatio   float64
 }
 
 func GetRelayMeta(c *gin.Context) *RelayMeta {
@@ -33,12 +35,20 @@ func GetRelayMeta(c *gin.Context) *RelayMeta {
 		APIVersion:   c.GetString("api_version"),
 		APIKey:       strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
 		Config:       nil,
+		BillingMode:  c.GetString("billing_mode"),
+		CountRatio:   c.GetFloat64("count_ratio"),
 	}
 	if meta.ChannelType == common.ChannelTypeAzure {
 		meta.APIVersion = GetAzureAPIVersion(c)
 	}
 	if meta.BaseURL == "" {
 		meta.BaseURL = common.ChannelBaseURLs[meta.ChannelType]
+	}
+	if meta.BillingMode == "" {
+		meta.BillingMode = common.BillingModeToken
+	}
+	if meta.CountRatio == 0 {
+		meta.CountRatio = 1.0
 	}
 	return &meta
 }

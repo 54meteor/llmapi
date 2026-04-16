@@ -384,6 +384,30 @@ const EditChannel = () => {
               options={modelOptions}
             />
           </Form.Field>
+          <Form.Field>
+            <Form.Select
+              label='计费方式'
+              name='billing_mode'
+              options={[
+                { key: 'token', text: '按 Token', value: 'token' },
+                { key: 'count', text: '按次数', value: 'count' }
+              ]}
+              value={inputs.billing_mode || 'token'}
+              onChange={handleInputChange}
+            />
+          </Form.Field>
+          {inputs.billing_mode === 'count' && (
+            <Form.Field>
+              <Form.Input
+                label='次数费率'
+                name='count_ratio'
+                type='number'
+                placeholder='每次请求计数量'
+                value={inputs.count_ratio || 1}
+                onChange={handleInputChange}
+              />
+            </Form.Field>
+          )}
           <div style={{ lineHeight: '40px', marginBottom: '12px' }}>
             <Button type={'button'} onClick={() => {
               handleInputChange(null, { name: 'models', value: basicModels });

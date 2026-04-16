@@ -129,6 +129,8 @@ func Distribute() func(c *gin.Context) {
 		case common.ChannelTypeAli:
 			c.Set("plugin", channel.Other)
 		}
+		c.Set("billing_mode", channel.BillingMode)
+		c.Set("count_ratio", channel.CountRatio)
 		c.Next()
 	}
 }

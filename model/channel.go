@@ -29,6 +29,8 @@ type Channel struct {
 	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
 	ModelMapping       *string `json:"model_mapping" gorm:"type:varchar(1024);default:''"`
 	Priority           *int64  `json:"priority" gorm:"bigint;default:0"`
+	BillingMode        string  `json:"billing_mode" gorm:"type:varchar(16);default:'token'"`
+	CountRatio         float64 `json:"count_ratio" gorm:"type:float;default:1.0"`
 }
 
 func GetAllChannels(startIdx int, num int, selectAll bool) ([]*Channel, error) {
