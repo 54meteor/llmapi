@@ -119,14 +119,19 @@ func AddToken(c *gin.Context) {
 		return
 	}
 	cleanToken := model.Token{
-		UserId:         c.GetInt("id"),
-		Name:           token.Name,
-		Key:            helper.GenerateKey(),
-		CreatedTime:    helper.GetTimestamp(),
-		AccessedTime:   helper.GetTimestamp(),
-		ExpiredTime:    token.ExpiredTime,
-		RemainQuota:    token.RemainQuota,
-		UnlimitedQuota: token.UnlimitedQuota,
+		UserId:              c.GetInt("id"),
+		Name:                token.Name,
+		Key:                 helper.GenerateKey(),
+		CreatedTime:         helper.GetTimestamp(),
+		AccessedTime:        helper.GetTimestamp(),
+		ExpiredTime:         token.ExpiredTime,
+		RemainQuota:         token.RemainQuota,
+		UnlimitedQuota:      token.UnlimitedQuota,
+		SwitchThreshold:     token.SwitchThreshold,
+		SwitchThresholdType: token.SwitchThresholdType,
+		AlertThreshold:      token.AlertThreshold,
+		AlertThresholdType:  token.AlertThresholdType,
+		SmartChannelEnabled: token.SmartChannelEnabled,
 	}
 	err = cleanToken.Insert()
 	if err != nil {
@@ -212,6 +217,11 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.ExpiredTime = token.ExpiredTime
 		cleanToken.RemainQuota = token.RemainQuota
 		cleanToken.UnlimitedQuota = token.UnlimitedQuota
+		cleanToken.SwitchThreshold = token.SwitchThreshold
+		cleanToken.SwitchThresholdType = token.SwitchThresholdType
+		cleanToken.AlertThreshold = token.AlertThreshold
+		cleanToken.AlertThresholdType = token.AlertThresholdType
+		cleanToken.SmartChannelEnabled = token.SmartChannelEnabled
 	}
 	err = cleanToken.Update()
 	if err != nil {

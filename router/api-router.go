@@ -90,6 +90,14 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 		}
+		tokenChannelRoute := apiRouter.Group("/token-channel")
+		tokenChannelRoute.Use(middleware.UserAuth())
+		{
+			tokenChannelRoute.GET("/:token_id", controller.GetTokenChannels)
+			tokenChannelRoute.POST("/", controller.CreateTokenChannel)
+			tokenChannelRoute.PUT("/:id", controller.UpdateTokenChannel)
+			tokenChannelRoute.DELETE("/:id", controller.DeleteTokenChannel)
+		}
 		redemptionRoute := apiRouter.Group("/redemption")
 		redemptionRoute.Use(middleware.AdminAuth())
 		{
