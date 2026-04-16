@@ -117,6 +117,10 @@ func RelayImageHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 		// https://{resource_name}.openai.azure.com/openai/deployments/dall-e-3/images/generations?api-version=2023-06-01-preview
 		fullRequestURL = fmt.Sprintf("%s/openai/deployments/%s/images/generations?api-version=%s", baseURL, imageModel, apiVersion)
 	}
+	if channelType == common.ChannelTypeSeedream {
+		// Volcano Ark uses /api/v3/images/generations (no /v1 prefix)
+		fullRequestURL = fmt.Sprintf("%s/images/generations", baseURL)
+	}
 
 	var requestBody io.Reader
 	if isModelMapped || channelType == common.ChannelTypeAzure { // make Azure channel request body

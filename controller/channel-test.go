@@ -45,6 +45,8 @@ func testChannel(channel *model.Channel, request openai.ChatRequest) (err error,
 				err = errors.New("请确保已在 Azure 上创建了 gpt-35-turbo 模型，并且 apiVersion 已正确填写！")
 			}
 		}()
+	case common.ChannelTypeSeedream:
+		return testImageChannel(channel)
 	default:
 		modelName, modelErr := model.GetFirstModelForChannel(channel.Id)
 		if modelErr != nil || modelName == "" {
@@ -111,6 +113,83 @@ func buildTestRequest() *openai.ChatRequest {
 	}
 	testRequest.Messages = append(testRequest.Messages, testMessage)
 	return testRequest
+}
+
+func testImageChannel(channel *model.Channel) (err error, openaiErr *openai.Error) {
+	// Get the base URL
+	baseURL := channel.GetBaseURL()
+	if baseURL == "" {
+		baseURL = common.ChannelBaseURLs[channel.Type]
+	}
+
+	// Build the image generation URL based on channel type
+	var requestURL string
+	switch channel.Type {
+	case common.ChannelTypeSeedream:
+		// Volcano Ark uses /api/v3/images/generations (no /v1 prefix)
+		requestURL = fmt.Sprintf("%s/images/generations", baseURL)
+	default:
+		requestURL = fmt.Sprintf("%s/v1/images/generations", baseURL)
+	}
+
+	// Get the first model for this channel
+	modelName, modelErr := model.GetFirstModelForChannel(channel.Id)
+	if modelErr != nil || modelName == "" {
+		modelName = "dall-e-2"
+	}
+
+	// Build image request
+	imageRequest := openai.ImageRequest{
+		Model: modelName,
+		Prompt: "a cute cat",
+		N:      1,
+		Size:   "1024x1024",
+	}
+
+	// Override size for Seedream if needed
+	if channel.Type == common.ChannelTypeSeedream {
+		imageRequest.Size = "1920x1920"
+	}
+
+	jsonData, err := json.Marshal(imageRequest)
+	if err != nil {
+		return err, nil
+	}
+
+	req, reqErr := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
+	if reqErr != nil {
+		return reqErr, nil
+	}
+
+	req.Header.Set("Authorization", "Bearer "+channel.Key)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := util.HTTPClient.Do(req)
+	if err != nil {
+		return err, nil
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read response body failed: %v", err), nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body)), nil
+	}
+
+	// Try to parse response to check for errors
+	var imageResponse openai.ImageResponse
+	if err := json.Unmarshal(body, &imageResponse); err != nil {
+		return fmt.Errorf("parse response failed: %v, body: %s", err, string(body)), nil
+	}
+
+	if len(imageResponse.Data) == 0 {
+		return errors.New("no images generated"), nil
+	}
+
+	return nil, nil
 }
 
 func TestChannel(c *gin.Context) {

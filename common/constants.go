@@ -65,6 +65,7 @@ const (
 	ChannelTypeGemini         = 24
 	ChannelTypeMiniMax        = 27
 	ChannelTypeOpenAIOAuth    = 28
+	ChannelTypeSeedream       = 29
 )
 
 var ChannelBaseURLs = []string{
@@ -97,4 +98,5 @@ var ChannelBaseURLs = []string{
 	"",                       // 26
 	"https://api.minimax.io", // 27
 	"https://api.openai.com", // 28
+	"https://ark.cn-beijing.volces.com/api/v3", // 29 Seedream
 }

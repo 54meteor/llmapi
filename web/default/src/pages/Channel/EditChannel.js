@@ -143,11 +143,13 @@ const EditChannel = () => {
   const fetchGroups = async () => {
     try {
       let res = await API.get(`/api/group/`);
-      setGroupOptions(res.data.data.map((group) => ({
-        key: group,
-        text: group,
-        value: group
-      })));
+      if (res.data.success) {
+        setGroupOptions(res.data.data.map((group) => ({
+          key: group.name,
+          text: group.name,
+          value: group.name
+        })));
+      }
     } catch (error) {
       showError(error.message);
     }
@@ -308,7 +310,7 @@ const EditChannel = () => {
               autoComplete='new-password'
             />
           </Form.Field>
-          <Form.Field>
+          <Form.Field style={{ display: 'none' }}>
             <Form.Dropdown
               label='分组'
               placeholder={'请选择可以使用该渠道的分组'}

@@ -6,3 +6,4 @@ web/default/build/
 logs/
 *.db
 one-api.db
+config.json

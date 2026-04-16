@@ -141,7 +141,9 @@ const EditModal = ({ open, channelId, onCancel, onOk }) => {
   const fetchGroups = async () => {
     try {
       let res = await API.get(`/api/group/`);
-      setGroupOptions(res.data.data);
+      if (res.data.success) {
+        setGroupOptions(res.data.data.map(g => ({ title: g.name })));
+      }
     } catch (error) {
       showError(error.message);
     }
@@ -455,17 +457,18 @@ const EditModal = ({ open, channelId, onCancel, onOk }) => {
                 </FormControl>
               )}
 
-              <FormControl fullWidth sx={{ ...theme.typography.otherInput }}>
+              <FormControl fullWidth sx={{ ...theme.typography.otherInput, display: 'none' }}>
                 <Autocomplete
                   multiple
                   id="channel-groups-label"
                   options={groupOptions}
-                  value={values.groups}
+                  getOptionLabel={(option) => option.title || ''}
+                  value={values.groups.map(g => ({ title: g }))}
                   onChange={(e, value) => {
                     const event = {
                       target: {
                         name: "groups",
-                        value: value,
+                        value: value.map(v => v.title),
                       },
                     };
                     handleChange(event);
