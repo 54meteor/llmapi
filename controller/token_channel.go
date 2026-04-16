@@ -68,8 +68,8 @@ func CreateTokenChannel(c *gin.Context) {
 		return
 	}
 
-	existing, _ := model.GetTokenChannel(tokenChannel.TokenId, tokenChannel.ChannelId)
-	if existing != nil {
+	existing, err := model.GetTokenChannel(tokenChannel.TokenId, tokenChannel.ChannelId)
+	if err == nil && existing != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "该渠道已绑定到此令牌",

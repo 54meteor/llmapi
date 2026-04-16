@@ -16,7 +16,7 @@ const ChannelSelector = ({ open, onClose, onSuccess, tokenId }) => {
         let boundRes = await API.get(`/api/token-channel/${tokenId}`);
         let boundIds = [];
         if (boundRes.data.success) {
-          boundIds = boundRes.data.data.map(tc => tc.channel_id);
+          boundIds = (boundRes.data.data || []).map(tc => tc.channel_id);
         }
         setChannels(res.data.data.filter(c => !boundIds.includes(c.id)));
       }

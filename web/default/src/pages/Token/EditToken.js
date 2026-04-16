@@ -89,7 +89,7 @@ const handleCancel = () => {
     let res = await API.get(`/api/token-channel/${tokenId}`);
     const { success, message, data } = res.data;
     if (success) {
-      setTokenChannels(data);
+      setTokenChannels(data || []);
     } else {
       showError(message);
     }
