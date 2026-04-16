@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -17,6 +18,24 @@ import (
 	"strconv"
 )
 
+type ConfigFile struct {
+	SQLDSN string `json:"sql_dsn"`
+}
+
+func loadConfigFile() {
+	data, err := os.ReadFile("config.json")
+	if err != nil {
+		return
+	}
+	var cfg ConfigFile
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return
+	}
+	if cfg.SQLDSN != "" && os.Getenv("SQL_DSN") == "" {
+		os.Setenv("SQL_DSN", cfg.SQLDSN)
+	}
+}
+
 func main() {
 	logger.SetupLogger()
 	logger.SysLog(fmt.Sprintf("One API %s started", common.Version))
@@ -26,6 +45,8 @@ func main() {
 	if config.DebugEnabled {
 		logger.SysLog("running in debug mode")
 	}
+	// Load config file
+	loadConfigFile()
 	// Initialize SQL Database
 	err := model.InitDB()
 	if err != nil {
@@ -46,6 +67,8 @@ func main() {
 
 	// Initialize options
 	model.InitOptionMap()
+	model.EnsureDefaultGroup()
+	model.ReloadGroupRatioFromDB()
 	logger.SysLog(fmt.Sprintf("using theme %s", config.Theme))
 	if common.RedisEnabled {
 		// for compatibility with old versions
