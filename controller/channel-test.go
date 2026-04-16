@@ -47,6 +47,8 @@ func testChannel(channel *model.Channel, request openai.ChatRequest) (err error,
 		}()
 	case common.ChannelTypeSeedream:
 		return testImageChannel(channel)
+	case common.ChannelTypeDashScope:
+		return testEmbeddingChannel(channel)
 	default:
 		modelName, modelErr := model.GetFirstModelForChannel(channel.Id)
 		if modelErr != nil || modelName == "" {
@@ -140,7 +142,7 @@ func testImageChannel(channel *model.Channel) (err error, openaiErr *openai.Erro
 
 	// Build image request
 	imageRequest := openai.ImageRequest{
-		Model: modelName,
+		Model:  modelName,
 		Prompt: "a cute cat",
 		N:      1,
 		Size:   "1024x1024",
@@ -187,6 +189,56 @@ func testImageChannel(channel *model.Channel) (err error, openaiErr *openai.Erro
 
 	if len(imageResponse.Data) == 0 {
 		return errors.New("no images generated"), nil
+	}
+
+	return nil, nil
+}
+
+func testEmbeddingChannel(channel *model.Channel) (err error, openaiErr *openai.Error) {
+	baseURL := channel.GetBaseURL()
+	if baseURL == "" {
+		baseURL = common.ChannelBaseURLs[channel.Type]
+	}
+
+	requestURL := fmt.Sprintf("%s/embeddings", baseURL)
+
+	modelName, modelErr := model.GetFirstModelForChannel(channel.Id)
+	if modelErr != nil || modelName == "" {
+		modelName = "text-embedding-v2"
+	}
+
+	embeddingRequest := map[string]interface{}{
+		"model":  modelName,
+		"input":  "hello world",
+		"format": "float",
+	}
+
+	jsonData, err := json.Marshal(embeddingRequest)
+	if err != nil {
+		return err, nil
+	}
+
+	req, reqErr := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
+	if reqErr != nil {
+		return reqErr, nil
+	}
+
+	req.Header.Set("Authorization", "Bearer "+channel.Key)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := util.HTTPClient.Do(req)
+	if err != nil {
+		return err, nil
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read response body failed: %v", err), nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body)), nil
 	}
 
 	return nil, nil
