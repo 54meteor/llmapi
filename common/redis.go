@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-redis/redis/v8"
 	"one-api/common/logger"
 	"os"
@@ -54,6 +55,9 @@ func RedisSet(key string, value string, expiration time.Duration) error {
 }
 
 func RedisGet(key string) (string, error) {
+	if !RedisEnabled || RDB == nil {
+		return "", fmt.Errorf("redis not enabled")
+	}
 	ctx := context.Background()
 	return RDB.Get(ctx, key).Result()
 }

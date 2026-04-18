@@ -8,6 +8,7 @@ import (
 	"one-api/common/logger"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -25,7 +26,9 @@ func printHelp() {
 }
 
 func init() {
-	flag.Parse()
+	// Skip flag parsing when running tests (binary ends with .test)
+	if len(os.Args) > 0 && !strings.HasSuffix(os.Args[0], ".test") {
+		flag.Parse()
 
 	if *PrintVersion {
 		fmt.Println(Version)
@@ -60,5 +63,6 @@ func init() {
 			}
 		}
 		logger.LogDir = *LogDir
+	}
 	}
 }

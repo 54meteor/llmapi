@@ -69,41 +69,25 @@ func Distribute() func(c *gin.Context) {
 				return
 			}
 		} else {
-			// Select a channel for the user
-			var modelRequest ModelRequest
-			err := common.UnmarshalBodyReusable(c, &modelRequest)
-			if err != nil {
-				abortWithMessage(c, http.StatusBadRequest, "无效的请求")
-				return
-			}
-			if strings.HasPrefix(c.Request.URL.Path, "/v1/moderations") {
-				if modelRequest.Model == "" {
-					modelRequest.Model = "text-moderation-stable"
+			tokenId := c.GetInt("token_id")
+			if tokenId > 0 {
+				var modelRequest ModelRequest
+				err := common.UnmarshalBodyReusable(c, &modelRequest)
+				if err != nil {
+					abortWithMessage(c, http.StatusBadRequest, "无效的请求")
+					return
 				}
-			}
-			if strings.HasSuffix(c.Request.URL.Path, "embeddings") {
-				if modelRequest.Model == "" {
-					modelRequest.Model = c.Param("model")
+				modelName := modelRequest.Model
+				if modelName == "" {
+					modelName = c.Param("model")
 				}
-			}
-			if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") {
-				if modelRequest.Model == "" {
-					modelRequest.Model = "dall-e-2"
+				channel, err = model.SelectChannelByToken(tokenId, modelName)
+				if err != nil {
+					abortWithMessage(c, http.StatusServiceUnavailable, err.Error())
+					return
 				}
-			}
-			if strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") || strings.HasPrefix(c.Request.URL.Path, "/v1/audio/translations") {
-				if modelRequest.Model == "" {
-					modelRequest.Model = "whisper-1"
-				}
-			}
-			channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, modelRequest.Model)
-			if err != nil {
-				message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, modelRequest.Model)
-				if channel != nil {
-					logger.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
-					message = "数据库一致性已被破坏，请联系管理员"
-				}
-				abortWithMessage(c, http.StatusServiceUnavailable, message)
+			} else {
+				abortWithMessage(c, http.StatusForbidden, "该令牌未绑定任何渠道，请先在令牌管理中绑定渠道路由")
 				return
 			}
 		}
