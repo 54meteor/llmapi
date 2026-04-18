@@ -197,6 +197,13 @@ func GetOrDefaultEnvInt(env string, defaultValue int) int {
 	return num
 }
 
+func GetOrDefaultEnvBool(env string, defaultValue bool) bool {
+	if os.Getenv(env) == "" {
+		return defaultValue
+	}
+	return os.Getenv(env) == "true"
+}
+
 func GetOrDefaultEnvString(env string, defaultValue string) string {
 	if env == "" || os.Getenv(env) == "" {
 		return defaultValue

@@ -76,12 +76,12 @@ var QuotaForNewUser = 0
 var QuotaForInviter = 0
 var QuotaForInvitee = 0
 var ChannelDisableThreshold = 5.0
-var AutomaticDisableChannelEnabled = false
+var AutomaticDisableChannelEnabled = helper.GetOrDefaultEnvBool("AUTOMATIC_DISABLE_CHANNEL_ENABLED", false)
 var AutomaticEnableChannelEnabled = false
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
 var ApproximateTokenEnabled = false
-var RetryTimes = 0
+var RetryTimes = helper.GetOrDefaultEnvInt("RETRY_TIMES", 0)
 
 var RootUserEmail = ""
 
