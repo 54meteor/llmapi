@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Header, Message, Segment, Table, Modal } from 'semantic-ui-react';
+import { Button, Form, Header, Message, Segment, Table, Modal, Input } from 'semantic-ui-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API, showError, showSuccess, timestamp2string } from '../../helpers';
 import { renderQuota, renderQuotaWithPrompt } from '../../helpers/render';
@@ -23,6 +23,8 @@ const EditToken = () => {
   };
   const [inputs, setInputs] = useState(originInputs);
   const [tokenChannels, setTokenChannels] = useState([]);
+  const [editingIds, setEditingIds] = useState(new Set());
+  const [editingValues, setEditingValues] = useState({});
   const [showChannelSelector, setShowChannelSelector] = useState(false);
   const { name, remain_quota, expired_time, unlimited_quota } = inputs;
   const navigate = useNavigate();
@@ -39,6 +41,43 @@ const handleCancel = () => {
     const { success, message } = res.data;
     if (success) {
       showSuccess('渠道解绑成功！');
+      loadTokenChannels();
+    } else {
+      showError(message);
+    }
+  };
+
+  const startEdit = (tc) => {
+    setEditingIds(new Set([...editingIds, tc.id]));
+    setEditingValues({
+      ...editingValues,
+      [tc.id]: {
+        priority: tc.priority,
+        quota_limit: tc.quota_limit
+      }
+    });
+  };
+
+  const cancelEdit = (id) => {
+    const newIds = new Set(editingIds);
+    newIds.delete(id);
+    setEditingIds(newIds);
+    const newValues = { ...editingValues };
+    delete newValues[id];
+    setEditingValues(newValues);
+  };
+
+  const saveEdit = async (tc) => {
+    const values = editingValues[tc.id];
+    if (!values) return;
+    let res = await API.put(`/api/token-channel/${tc.id}`, {
+      priority: parseInt(values.priority) || 1,
+      quota_limit: parseInt(values.quota_limit) || 0
+    });
+    const { success, message } = res.data;
+    if (success) {
+      showSuccess('渠道配置更新成功！');
+      cancelEdit(tc.id);
       loadTokenChannels();
     } else {
       showError(message);
@@ -256,14 +295,49 @@ const handleCancel = () => {
                   <Table.Body>
                     {tokenChannels.map(tc => (
                       <Table.Row key={tc.id}>
-                        <Table.Cell>{tc.priority}</Table.Cell>
+                        <Table.Cell>
+                          {editingIds.has(tc.id) ? (
+                            <Form.Input
+                              size='mini'
+                              type='number'
+                              value={editingValues[tc.id]?.priority ?? tc.priority}
+                              onChange={(e, { value }) => setEditingValues({
+                                ...editingValues,
+                                [tc.id]: { ...editingValues[tc.id], priority: value }
+                              })}
+                            />
+                          ) : tc.priority}
+                        </Table.Cell>
                         <Table.Cell>{tc.channel_name}</Table.Cell>
                         <Table.Cell>{tc.channel_type}</Table.Cell>
-                        <Table.Cell>{tc.quota_limit || '不限'}</Table.Cell>
+                        <Table.Cell>
+                          {editingIds.has(tc.id) ? (
+                            <Form.Input
+                              size='mini'
+                              type='number'
+                              placeholder='0 表示不限'
+                              value={editingValues[tc.id]?.quota_limit ?? tc.quota_limit}
+                              onChange={(e, { value }) => setEditingValues({
+                                ...editingValues,
+                                [tc.id]: { ...editingValues[tc.id], quota_limit: value }
+                              })}
+                            />
+                          ) : (tc.quota_limit || '不限')}
+                        </Table.Cell>
                         <Table.Cell>{tc.used_quota}</Table.Cell>
                         <Table.Cell>{tc.remain_quota} ({tc.remain_percent}%)</Table.Cell>
                         <Table.Cell>
-                          <Button size='small' onClick={() => handleDeleteChannel(tc.id)}>解绑</Button>
+                          {editingIds.has(tc.id) ? (
+                            <>
+                              <Button size='small' primary onClick={() => saveEdit(tc)}>保存</Button>
+                              <Button size='small' onClick={() => cancelEdit(tc.id)}>取消</Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button size='small' onClick={() => startEdit(tc)}>编辑</Button>
+                              <Button size='small' onClick={() => handleDeleteChannel(tc.id)}>解绑</Button>
+                            </>
+                          )}
                         </Table.Cell>
                       </Table.Row>
                     ))}
