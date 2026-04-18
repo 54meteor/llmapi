@@ -362,7 +362,7 @@ const LogsTable = () => {
                     <Table.Cell>{log.token_name ? <Label basic>{log.token_name}</Label> : ''}</Table.Cell>
                     <Table.Cell>{renderType(log.type)}</Table.Cell>
                     <Table.Cell>{log.model_name ? <Label basic>{log.model_name}</Label> : ''}</Table.Cell>
-                    <Table.Cell>-</Table.Cell>
+                    <Table.Cell>{log.type === 2 && log.ratio ? log.ratio.toFixed(2) : '-'}</Table.Cell>
                     <Table.Cell>{log.prompt_tokens ? log.prompt_tokens : ''}</Table.Cell>
                     <Table.Cell>{log.completion_tokens ? log.completion_tokens : ''}</Table.Cell>
                     <Table.Cell>{log.quota ? renderQuota(log.quota, 6) : ''}</Table.Cell>

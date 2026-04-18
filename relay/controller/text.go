@@ -170,7 +170,7 @@ func RelayTextHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode 
 			}
 			if quota != 0 {
 				logContent := fmt.Sprintf("模型倍率 %.2f，分组倍率 %.2f", modelRatio, groupRatio)
-				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, promptTokens, completionTokens, textRequest.Model, meta.TokenName, quota, logContent)
+				model.RecordConsumeLog(ctx, meta.UserId, meta.ChannelId, promptTokens, completionTokens, textRequest.Model, meta.TokenName, quota, ratio, logContent)
 				model.UpdateUserUsedQuotaAndRequestCount(meta.UserId, quota)
 				model.UpdateChannelUsedQuota(meta.ChannelId, quota)
 			}

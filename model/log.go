@@ -13,18 +13,19 @@ import (
 )
 
 type Log struct {
-	Id               int    `json:"id"`
-	UserId           int    `json:"user_id" gorm:"index"`
-	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_type"`
-	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
-	Content          string `json:"content"`
-	Username         string `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
-	TokenName        string `json:"token_name" gorm:"index;default:''"`
-	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
-	Quota            int    `json:"quota" gorm:"default:0"`
-	PromptTokens     int    `json:"prompt_tokens" gorm:"default:0"`
-	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
-	ChannelId        int    `json:"channel" gorm:"index"`
+	Id               int     `json:"id"`
+	UserId           int     `json:"user_id" gorm:"index"`
+	CreatedAt        int64   `json:"created_at" gorm:"bigint;index:idx_created_at_type"`
+	Type             int     `json:"type" gorm:"index:idx_created_at_type"`
+	Content          string  `json:"content"`
+	Username         string  `json:"username" gorm:"index:index_username_model_name,priority:2;default:''"`
+	TokenName        string  `json:"token_name" gorm:"index;default:''"`
+	ModelName        string  `json:"model_name" gorm:"index:index_username_model_name,priority:1;default:''"`
+	Quota            int     `json:"quota" gorm:"default:0"`
+	PromptTokens     int     `json:"prompt_tokens" gorm:"default:0"`
+	CompletionTokens int     `json:"completion_tokens" gorm:"default:0"`
+	ChannelId        int     `json:"channel" gorm:"index"`
+	Ratio            float64 `json:"ratio" gorm:"type:float;default:1.0"`
 }
 
 const (
@@ -52,8 +53,8 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
-func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, content string) {
-	logger.Info(ctx, fmt.Sprintf("record consume log: userId=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d, content=%s", userId, channelId, promptTokens, completionTokens, modelName, tokenName, quota, content))
+func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptTokens int, completionTokens int, modelName string, tokenName string, quota int, ratio float64, content string) {
+	logger.Info(ctx, fmt.Sprintf("record consume log: userId=%d, channelId=%d, promptTokens=%d, completionTokens=%d, modelName=%s, tokenName=%s, quota=%d, ratio=%.2f, content=%s", userId, channelId, promptTokens, completionTokens, modelName, tokenName, quota, ratio, content))
 	if !config.LogConsumeEnabled {
 		return
 	}
@@ -69,6 +70,7 @@ func RecordConsumeLog(ctx context.Context, userId int, channelId int, promptToke
 		ModelName:        modelName,
 		Quota:            quota,
 		ChannelId:        channelId,
+		Ratio:            ratio,
 	}
 	err := DB.Create(log).Error
 	if err != nil {
