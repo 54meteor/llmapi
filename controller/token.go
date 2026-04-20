@@ -33,8 +33,19 @@ func GetAllTokens(c *gin.Context) {
 }
 
 func SearchTokens(c *gin.Context) {
-	userId := c.GetInt("id")
 	keyword := c.Query("keyword")
+	queryUserId := c.Query("user_id")
+
+	var userId int
+	if c.GetInt("role") >= common.RoleAdminUser && queryUserId != "" {
+		if uid, err := strconv.Atoi(queryUserId); err == nil {
+			userId = uid
+		} else {
+			userId = c.GetInt("id")
+		}
+	} else {
+		userId = c.GetInt("id")
+	}
 	tokens, err := model.SearchUserTokens(userId, keyword)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -111,6 +122,13 @@ func AddToken(c *gin.Context) {
 		})
 		return
 	}
+	if token.Name == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "令牌名称不能为空",
+		})
+		return
+	}
 	if len(token.Name) > 30 {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -118,8 +136,16 @@ func AddToken(c *gin.Context) {
 		})
 		return
 	}
+	userId := c.GetInt("id")
+	if c.GetInt("role") >= common.RoleAdminUser {
+		if uidStr := c.Query("user_id"); uidStr != "" {
+			if uid, err := strconv.Atoi(uidStr); err == nil {
+				userId = uid
+			}
+		}
+	}
 	cleanToken := model.Token{
-		UserId:              c.GetInt("id"),
+		UserId:              userId,
 		Name:                token.Name,
 		Key:                 helper.GenerateKey(),
 		CreatedTime:         helper.GetTimestamp(),
@@ -168,6 +194,7 @@ func DeleteToken(c *gin.Context) {
 
 func UpdateToken(c *gin.Context) {
 	userId := c.GetInt("id")
+	isAdmin := c.GetInt("role") >= common.RoleAdminUser
 	statusOnly := c.Query("status_only")
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
@@ -185,7 +212,13 @@ func UpdateToken(c *gin.Context) {
 		})
 		return
 	}
-	cleanToken, err := model.GetTokenByIds(token.Id, userId)
+
+	var cleanToken *model.Token
+	if isAdmin && token.UserId > 0 {
+		cleanToken, err = model.GetTokenById(token.Id)
+	} else {
+		cleanToken, err = model.GetTokenByIds(token.Id, userId)
+	}
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -212,7 +245,6 @@ func UpdateToken(c *gin.Context) {
 	if statusOnly != "" {
 		cleanToken.Status = token.Status
 	} else {
-		// If you add more fields, please also update token.Update()
 		cleanToken.Name = token.Name
 		cleanToken.ExpiredTime = token.ExpiredTime
 		cleanToken.RemainQuota = token.RemainQuota
@@ -222,6 +254,9 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.AlertThreshold = token.AlertThreshold
 		cleanToken.AlertThresholdType = token.AlertThresholdType
 		cleanToken.SmartChannelEnabled = token.SmartChannelEnabled
+		if isAdmin && token.UserId > 0 {
+			cleanToken.UserId = token.UserId
+		}
 	}
 	err = cleanToken.Update()
 	if err != nil {
@@ -235,6 +270,46 @@ func UpdateToken(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    cleanToken,
+	})
+	return
+}
+
+type TokenWithUsername struct {
+	model.Token
+	Username string `json:"username"`
+}
+
+func GetAllTokensAdmin(c *gin.Context) {
+	p, _ := strconv.Atoi(c.Query("p"))
+	if p < 0 {
+		p = 0
+	}
+	filterUserId := 0
+	if uidStr := c.Query("user_id"); uidStr != "" {
+		if uid, err := strconv.Atoi(uidStr); err == nil {
+			filterUserId = uid
+		}
+	}
+	tokens, err := model.GetAllTokensAdmin(filterUserId, p*config.ItemsPerPage, config.ItemsPerPage)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	var result []TokenWithUsername
+	for _, token := range tokens {
+		username := model.GetUsernameById(token.UserId)
+		result = append(result, TokenWithUsername{
+			Token:    *token,
+			Username: username,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
 	})
 	return
 }
