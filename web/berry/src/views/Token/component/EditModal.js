@@ -18,12 +18,20 @@ import {
   InputAdornment,
   Switch,
   FormHelperText,
+  Select,
+  MenuItem,
+  Checkbox,
+  ListItemText,
+  List,
+  ListItem,
+  ListItemIcon,
+  Box
 } from "@mui/material";
 
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { renderQuotaWithPrompt, showSuccess, showError } from "utils/common";
+import { renderQuotaWithPrompt, showSuccess, showError, isAdmin } from "utils/common";
 import { API } from "utils/api";
 require("dayjs/locale/zh-cn");
 
@@ -41,11 +49,54 @@ const originInputs = {
   remain_quota: 0,
   expired_time: -1,
   unlimited_quota: false,
+  user_id: 0,
+  channel_ids: []
 };
 
 const EditModal = ({ open, tokenId, onCancel, onOk }) => {
   const theme = useTheme();
   const [inputs, setInputs] = useState(originInputs);
+  const [users, setUsers] = useState([]);
+  const [channels, setChannels] = useState([]);
+  const [selectedChannels, setSelectedChannels] = useState([]);
+  const isAdminUser = isAdmin();
+
+  const loadUsers = async () => {
+    if (!isAdminUser) return;
+    const res = await API.get('/api/user/');
+    const { success, data } = res.data;
+    if (success) {
+      setUsers(data);
+    }
+  };
+
+  const loadChannels = async () => {
+    const res = await API.get('/api/channel/');
+    const { success, data } = res.data;
+    if (success) {
+      setChannels(data);
+    }
+  };
+
+  const loadTokenChannels = async () => {
+    if (!tokenId) return;
+    const res = await API.get(`/api/token-channel/${tokenId}`);
+    const { success, data } = res.data;
+    if (success) {
+      const boundChannelIds = data.map(tc => tc.channel_id);
+      setSelectedChannels(boundChannelIds);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      loadUsers();
+      loadChannels();
+      if (tokenId) {
+        loadTokenChannels();
+      }
+    }
+  }, [open, tokenId]);
 
   const submit = async (values, { setErrors, setStatus, setSubmitting }) => {
     setSubmitting(true);
@@ -55,7 +106,8 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
     if (values.is_edit) {
       res = await API.put(`/api/token/`, { ...values, id: parseInt(tokenId) });
     } else {
-      res = await API.post(`/api/token/`, values);
+      const queryParams = values.user_id ? `?user_id=${values.user_id}` : '';
+      res = await API.post(`/api/token/${queryParams}`, values);
     }
     const { success, message } = res.data;
     if (success) {
@@ -63,6 +115,14 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
         showSuccess("令牌更新成功！");
       } else {
         showSuccess("令牌创建成功，请在列表页面点击复制获取令牌！");
+      }
+      if (!values.is_edit && selectedChannels.length > 0) {
+        const newTokenId = tokenId || res.data.data?.id;
+        if (newTokenId) {
+          for (const channelId of selectedChannels) {
+            await API.post('/api/token-channel/', { token_id: newTokenId, channel_id: channelId });
+          }
+        }
       }
       setSubmitting(false);
       setStatus({ success: true });
@@ -78,7 +138,13 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
     const { success, message, data } = res.data;
     if (success) {
       data.is_edit = true;
+      data.user_id = data.user_id || 0;
       setInputs(data);
+      const tokenChannelsRes = await API.get(`/api/token-channel/${tokenId}`);
+      const { success: tcSuccess, data: tcData } = tokenChannelsRes.data;
+      if (tcSuccess) {
+        setSelectedChannels(tcData.map(tc => tc.channel_id));
+      }
     } else {
       showError(message);
     }
@@ -149,6 +215,24 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                   </FormHelperText>
                 )}
               </FormControl>
+              {isAdminUser && (
+                <FormControl fullWidth sx={{ ...theme.typography.otherInput }}>
+                  <InputLabel>归属用户</InputLabel>
+                  <Select
+                    label="归属用户"
+                    name="user_id"
+                    value={values.user_id || 0}
+                    onChange={(e) => {
+                      setFieldValue('user_id', e.target.value);
+                    }}
+                  >
+                    <MenuItem value={0}>请选择用户</MenuItem>
+                    {users.map((user) => (
+                      <MenuItem key={user.id} value={user.id}>{user.username}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
               {values.expired_time !== -1 && (
                 <FormControl
                   fullWidth
@@ -245,6 +329,31 @@ const EditModal = ({ open, tokenId, onCancel, onOk }) => {
                 }}
               />{" "}
               无限额度
+              <FormControl fullWidth sx={{ ...theme.typography.otherInput, mt: 2 }}>
+                <InputLabel>绑定渠道</InputLabel>
+                <Select
+                  multiple
+                  label="绑定渠道"
+                  value={selectedChannels}
+                  onChange={(e) => {
+                    setSelectedChannels(e.target.value);
+                  }}
+                  renderValue={(selected) => {
+                    const selectedNames = channels
+                      .filter(ch => selected.includes(ch.id))
+                      .map(ch => ch.name)
+                      .join(', ');
+                    return selectedNames || '请选择渠道';
+                  }}
+                >
+                  {channels.map((channel) => (
+                    <MenuItem key={channel.id} value={channel.id}>
+                      <Checkbox checked={selectedChannels.indexOf(channel.id) !== -1} />
+                      <ListItemText primary={channel.name} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <DialogActions>
                 <Button onClick={onCancel}>取消</Button>
                 <Button

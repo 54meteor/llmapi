@@ -41,6 +41,17 @@ func SearchUserTokens(userId int, keyword string) (tokens []*Token, err error) {
 	return tokens, err
 }
 
+func GetAllTokensAdmin(userId int, startIdx int, num int) ([]*Token, error) {
+	var tokens []*Token
+	var err error
+	query := DB
+	if userId > 0 {
+		query = query.Where("user_id = ?", userId)
+	}
+	err = query.Order("id desc").Limit(num).Offset(startIdx).Find(&tokens).Error
+	return tokens, err
+}
+
 func ValidateUserToken(key string) (token *Token, err error) {
 	if key == "" {
 		return nil, errors.New("未提供令牌")
@@ -114,8 +125,22 @@ func (token *Token) Insert() error {
 // Update Make sure your token's fields is completed, because this will update non-zero values
 func (token *Token) Update() error {
 	var err error
-	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "switch_threshold", "switch_threshold_type", "alert_threshold", "alert_threshold_type", "smart_channel_enabled").Updates(token).Error
+	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "switch_threshold", "switch_threshold_type", "alert_threshold", "alert_threshold_type", "smart_channel_enabled", "user_id").Updates(token).Error
 	return err
+}
+
+func UpdateTokenUserId(id int, newUserId int) error {
+	if id == 0 || newUserId == 0 {
+		return errors.New("id 或 userId 无效！")
+	}
+	result := DB.Model(&Token{}).Where("id = ?", id).Update("user_id", newUserId)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("Token 不存在")
+	}
+	return nil
 }
 
 func (token *Token) SelectUpdate() error {

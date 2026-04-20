@@ -90,6 +90,11 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 		}
+		tokenAdminRoute := apiRouter.Group("/token")
+		tokenAdminRoute.Use(middleware.AdminAuth())
+		{
+			tokenAdminRoute.GET("/list-all", controller.GetAllTokensAdmin)
+		}
 		tokenChannelRoute := apiRouter.Group("/token-channel")
 		tokenChannelRoute.Use(middleware.UserAuth())
 		{

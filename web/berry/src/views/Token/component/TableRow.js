@@ -16,13 +16,19 @@ import {
   Button,
   Tooltip,
   Stack,
-  ButtonGroup
+  ButtonGroup,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 
 import TableSwitch from 'ui-component/Switch';
-import { renderQuota, showSuccess, timestamp2string } from 'utils/common';
+import { renderQuota, showSuccess, showError, timestamp2string, isAdmin } from 'utils/common';
+import { API } from 'utils/api';
 
-import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled } from '@tabler/icons-react';
+import { IconDotsVertical, IconEdit, IconTrash, IconCaretDownFilled, IconLink } from '@tabler/icons-react';
 
 const COPY_OPTIONS = [
   {
@@ -56,8 +62,13 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
   const [open, setOpen] = useState(null);
   const [menuItems, setMenuItems] = useState(null);
   const [openDelete, setOpenDelete] = useState(false);
+  const [openChannelBind, setOpenChannelBind] = useState(false);
+  const [channels, setChannels] = useState([]);
+  const [selectedChannels, setSelectedChannels] = useState([]);
+  const [loadingChannels, setLoadingChannels] = useState(false);
   const [statusSwitch, setStatusSwitch] = useState(item.status);
   const siteInfo = useSelector((state) => state.siteInfo);
+  const isAdminUser = isAdmin();
 
   const handleDeleteOpen = () => {
     handleCloseMenu();
@@ -66,6 +77,73 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
 
   const handleDeleteClose = () => {
     setOpenDelete(false);
+  };
+
+  const handleBindChannelsOpen = async () => {
+    handleCloseMenu();
+    setOpenChannelBind(true);
+    setLoadingChannels(true);
+    try {
+      const [channelsRes, tokenChannelsRes] = await Promise.all([
+        API.get('/api/channel/'),
+        API.get(`/api/token-channel/${item.id}`)
+      ]);
+      const { success: csSuccess, data: channelsData } = channelsRes.data;
+      const { success: tsSuccess, data: tokenChannelsData } = tokenChannelsRes.data;
+      if (csSuccess) {
+        setChannels(channelsData);
+      }
+      if (tsSuccess) {
+        const boundChannelIds = tokenChannelsData.map(tc => tc.channel_id);
+        setSelectedChannels(boundChannelIds);
+      }
+    } catch (err) {
+      showError('加载渠道失败');
+    }
+    setLoadingChannels(false);
+  };
+
+  const handleBindChannelsClose = () => {
+    setOpenChannelBind(false);
+    setSelectedChannels([]);
+  };
+
+  const handleChannelToggle = (channelId) => {
+    const currentIndex = selectedChannels.indexOf(channelId);
+    const newSelected = [...selectedChannels];
+    if (currentIndex === -1) {
+      newSelected.push(channelId);
+    } else {
+      newSelected.splice(currentIndex, 1);
+    }
+    setSelectedChannels(newSelected);
+  };
+
+  const handleSaveChannels = async () => {
+    try {
+      const boundRes = await API.get(`/api/token-channel/${item.id}`);
+      const { success, data: boundData } = boundRes.data;
+      if (!success) {
+        showError('获取当前绑定失败');
+        return;
+      }
+      const oldChannelIds = boundData.map(tc => tc.channel_id);
+      const toAdd = selectedChannels.filter(id => !oldChannelIds.includes(id));
+      const toRemove = oldChannelIds.filter(id => !selectedChannels.includes(id));
+      for (const channelId of toRemove) {
+        const bound = boundData.find(tc => tc.channel_id === channelId);
+        if (bound) {
+          await API.delete(`/api/token-channel/${bound.id}`);
+        }
+      }
+      for (const channelId of toAdd) {
+        await API.post('/api/token-channel/', { token_id: item.id, channel_id: channelId });
+      }
+      showSuccess('渠道绑定成功');
+      handleBindChannelsClose();
+    } catch (err) {
+      showError('保存渠道绑定失败');
+    }
   };
 
   const handleOpenMenu = (event, type) => {
@@ -110,6 +188,12 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
       },
       color: undefined
     },
+    ...(isAdminUser ? [{
+      text: '绑定渠道',
+      icon: <IconLink style={{ marginRight: '16px' }} />,
+      onClick: handleBindChannelsOpen,
+      color: undefined
+    }] : []),
     {
       text: '删除',
       icon: <IconTrash style={{ marginRight: '16px' }} />,
@@ -169,6 +253,8 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
     <>
       <TableRow tabIndex={item.id}>
         <TableCell>{item.name}</TableCell>
+
+        <TableCell>{item.username || '-'}</TableCell>
 
         <TableCell>
           <Tooltip
@@ -255,6 +341,39 @@ export default function TokensTableRow({ item, manageToken, handleOpenModal, set
           <Button onClick={handleDeleteClose}>关闭</Button>
           <Button onClick={handleDelete} sx={{ color: 'error.main' }} autoFocus>
             删除
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openChannelBind} onClose={handleBindChannelsClose} fullWidth maxWidth="sm">
+        <DialogTitle>绑定渠道 - {item.name}</DialogTitle>
+        <DialogContent>
+          <List>
+            {loadingChannels ? (
+              <ListItem>
+                <ListItemText>加载中...</ListItemText>
+              </ListItem>
+            ) : (
+              channels.map((channel) => (
+                <ListItem key={channel.id} dense>
+                  <ListItemIcon>
+                    <Checkbox
+                      edge="start"
+                      checked={selectedChannels.indexOf(channel.id) !== -1}
+                      onChange={() => handleChannelToggle(channel.id)}
+                      disableRipple
+                    />
+                  </ListItemIcon>
+                  <ListItemText primary={channel.name} secondary={channel.base_url} />
+                </ListItem>
+              ))
+            )}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleBindChannelsClose}>取消</Button>
+          <Button onClick={handleSaveChannels} variant="contained">
+            保存
           </Button>
         </DialogActions>
       </Dialog>

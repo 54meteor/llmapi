@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { showError, showSuccess } from 'utils/common';
+import { showError, showSuccess, isAdmin } from 'utils/common';
 
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -10,6 +10,10 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Alert from '@mui/material/Alert';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 
 import { Button, Card, Box, Stack, Container, Typography } from '@mui/material';
 import TokensTableRow from './component/TableRow';
@@ -28,11 +32,18 @@ export default function Token() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [editTokenId, setEditTokenId] = useState(0);
+  const [users, setUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState(0);
   const siteInfo = useSelector((state) => state.siteInfo);
+  const isAdminUser = isAdmin();
 
   const loadTokens = async (startIdx) => {
     setSearching(true);
-    const res = await API.get(`/api/token/?p=${startIdx}`);
+    let url = `/api/token/list-all?p=${startIdx}`;
+    if (selectedUserId > 0) {
+      url += `&user_id=${selectedUserId}`;
+    }
+    const res = await API.get(url);
     const { success, message, data } = res.data;
     if (success) {
       if (startIdx === 0) {
@@ -47,6 +58,19 @@ export default function Token() {
     }
     setSearching(false);
   };
+
+  const loadUsers = async () => {
+    if (!isAdminUser) return;
+    const res = await API.get('/api/user/');
+    const { success, data } = res.data;
+    if (success) {
+      setUsers(data);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   useEffect(() => {
     loadTokens(0)
@@ -68,21 +92,15 @@ export default function Token() {
 
   const searchTokens = async (event) => {
     event.preventDefault();
-    if (searchKeyword === '') {
-      await loadTokens(0);
-      setActivePage(0);
-      return;
-    }
-    setSearching(true);
-    const res = await API.get(`/api/token/search?keyword=${searchKeyword}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setTokens(data);
-      setActivePage(0);
-    } else {
-      showError(message);
-    }
-    setSearching(false);
+    await loadTokens(0);
+    setActivePage(0);
+  };
+
+  const handleUserFilterChange = async (event) => {
+    const userId = event.target.value;
+    setSelectedUserId(userId);
+    await loadTokens(0);
+    setActivePage(0);
   };
 
   const handleSearchKeyword = (event) => {
@@ -164,6 +182,21 @@ export default function Token() {
         <Box component="form" onSubmit={searchTokens} noValidate>
           <TableToolBar filterName={searchKeyword} handleFilterName={handleSearchKeyword} placeholder={'搜索令牌的名称...'} />
         </Box>
+        {isAdminUser && (
+          <Toolbar sx={{ minHeight: '50px !important' }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>所属用户</InputLabel>
+              <Select value={selectedUserId} label="所属用户" onChange={handleUserFilterChange}>
+                <MenuItem value={0}>全部用户</MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.id} value={user.id}>
+                    {user.username}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Toolbar>
+        )}
         <Toolbar
           sx={{
             textAlign: 'right',
