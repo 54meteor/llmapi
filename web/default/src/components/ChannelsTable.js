@@ -210,7 +210,7 @@ const ChannelsTable = () => {
   };
 
   const testChannel = async (id, name, idx) => {
-    const res = await API.get(`/api/channel/test/${id}/`);
+    const res = await API.get(`/api/channel/test/${id}`);
     const { success, message, time } = res.data;
     if (success) {
       let newChannels = [...channels];

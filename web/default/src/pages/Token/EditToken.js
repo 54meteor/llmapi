@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Header, Message, Segment, Table, Modal, Input } from 'semantic-ui-react';
+import { Button, Form, Header, Message, Segment, Table, Modal, Input, Dropdown } from 'semantic-ui-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { API, showError, showSuccess, timestamp2string } from '../../helpers';
+import { API, showError, showSuccess, timestamp2string, isAdmin } from '../../helpers';
 import { renderQuota, renderQuotaWithPrompt } from '../../helpers/render';
 import ChannelSelector from '../../components/ChannelSelector';
 
@@ -19,13 +19,16 @@ const EditToken = () => {
     switch_threshold_type: 'percent',
     alert_threshold: 5,
     alert_threshold_type: 'percent',
-    smart_channel_enabled: true
+    smart_channel_enabled: true,
+    user_id: isEdit ? 0 : ''
   };
   const [inputs, setInputs] = useState(originInputs);
   const [tokenChannels, setTokenChannels] = useState([]);
   const [editingIds, setEditingIds] = useState(new Set());
   const [editingValues, setEditingValues] = useState({});
   const [showChannelSelector, setShowChannelSelector] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [userOptions, setUserOptions] = useState([]);
   const { name, remain_quota, expired_time, unlimited_quota } = inputs;
   const navigate = useNavigate();
   const handleInputChange = (e, { name, value }) => {
@@ -133,11 +136,32 @@ const handleCancel = () => {
       showError(message);
     }
   };
+
+  const loadUsers = async () => {
+    if (!isAdmin()) return;
+    try {
+      let res = await API.get(`/api/user/`);
+      if (res.data.success) {
+        setUsers(res.data.data || []);
+        setUserOptions(
+          (res.data.data || []).map((user) => ({
+            key: user.id,
+            text: user.username,
+            value: user.id,
+          }))
+        );
+      }
+    } catch (error) {
+      showError(error.message);
+    }
+  };
+
   useEffect(() => {
     if (isEdit) {
       loadToken().then();
       loadTokenChannels().then();
     }
+    loadUsers().then();
   }, []);
 
   const submit = async () => {
@@ -156,7 +180,12 @@ const handleCancel = () => {
     if (isEdit) {
       res = await API.put(`/api/token/`, { ...localInputs, id: parseInt(tokenId) });
     } else {
-      res = await API.post(`/api/token/`, localInputs);
+      // Pass user_id as query parameter for admin
+      if (inputs.user_id && isAdmin()) {
+        res = await API.post(`/api/token/?user_id=${inputs.user_id}`, localInputs);
+      } else {
+        res = await API.post(`/api/token/`, localInputs);
+      }
     }
     const { success, message } = res.data;
     if (success) {
@@ -187,6 +216,23 @@ const handleCancel = () => {
               required={!isEdit}
             />
           </Form.Field>
+          {isAdmin() && (
+            <Form.Field>
+              <label>所属用户</label>
+              <Dropdown
+                placeholder='选择用户'
+                fluid
+                selection
+                clearable
+                search
+                options={userOptions}
+                value={inputs.user_id || ''}
+                onChange={(_, { value }) => {
+                  setInputs({ ...inputs, user_id: value || '' });
+                }}
+              />
+            </Form.Field>
+          )}
           <Form.Field>
             <Form.Input
               label='过期时间'

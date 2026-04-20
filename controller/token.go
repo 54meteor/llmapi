@@ -65,6 +65,7 @@ func SearchTokens(c *gin.Context) {
 func GetToken(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	userId := c.GetInt("id")
+	isAdmin := c.GetInt("role") >= common.RoleAdminUser
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -72,7 +73,12 @@ func GetToken(c *gin.Context) {
 		})
 		return
 	}
-	token, err := model.GetTokenByIds(id, userId)
+	var token *model.Token
+	if isAdmin {
+		token, err = model.GetTokenById(id)
+	} else {
+		token, err = model.GetTokenByIds(id, userId)
+	}
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,

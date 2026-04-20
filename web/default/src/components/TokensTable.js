@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Dropdown, Form, Label, Pagination, Popup, Table } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
-import { API, copy, showError, showSuccess, showWarning, timestamp2string } from '../helpers';
+import { API, copy, showError, showSuccess, showWarning, timestamp2string, isAdmin } from '../helpers';
 
 import { ITEMS_PER_PAGE } from '../constants';
 import { renderQuota } from '../helpers/render';
@@ -50,7 +50,12 @@ const TokensTable = () => {
   const [targetTokenIdx, setTargetTokenIdx] = useState(0);
 
   const loadTokens = async (startIdx) => {
-    const res = await API.get(`/api/token/?p=${startIdx}`);
+    let res;
+    if (isAdmin()) {
+      res = await API.get(`/api/token/list-all?p=${startIdx}`);
+    } else {
+      res = await API.get(`/api/token/?p=${startIdx}`);
+    }
     const { success, message, data } = res.data;
     if (success) {
       if (startIdx === 0) {
@@ -208,13 +213,25 @@ const TokensTable = () => {
       return;
     }
     setSearching(true);
-    const res = await API.get(`/api/token/search?keyword=${searchKeyword}`);
-    const { success, message, data } = res.data;
-    if (success) {
-      setTokens(data);
+    if (isAdmin()) {
+      // Admin: filter locally from already loaded tokens
+      const keyword = searchKeyword.toLowerCase();
+      const filtered = tokens.filter(token =>
+        (token.name && token.name.toLowerCase().includes(keyword)) ||
+        (token.key && token.key.toLowerCase().includes(keyword)) ||
+        (token.username && token.username.toLowerCase().includes(keyword))
+      );
+      setTokens(filtered);
       setActivePage(1);
     } else {
-      showError(message);
+      const res = await API.get(`/api/token/search?keyword=${searchKeyword}`);
+      const { success, message, data } = res.data;
+      if (success) {
+        setTokens(data);
+        setActivePage(1);
+      } else {
+        showError(message);
+      }
     }
     setSearching(false);
   };
