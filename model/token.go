@@ -37,16 +37,19 @@ func GetAllUserTokens(userId int, startIdx int, num int) ([]*Token, error) {
 }
 
 func SearchUserTokens(userId int, keyword string) (tokens []*Token, err error) {
-	err = DB.Where("user_id = ?", userId).Where("name LIKE ?", keyword+"%").Find(&tokens).Error
+	err = DB.Where("user_id = ?", userId).Where("name LIKE ?", "%"+keyword+"%").Find(&tokens).Error
 	return tokens, err
 }
 
-func GetAllTokensAdmin(userId int, startIdx int, num int) ([]*Token, error) {
+func GetAllTokensAdmin(userId int, startIdx int, num int, keyword string) ([]*Token, error) {
 	var tokens []*Token
 	var err error
 	query := DB
 	if userId > 0 {
 		query = query.Where("user_id = ?", userId)
+	}
+	if keyword != "" {
+		query = query.Where("name LIKE ?", "%"+keyword+"%")
 	}
 	err = query.Order("id desc").Limit(num).Offset(startIdx).Find(&tokens).Error
 	return tokens, err
