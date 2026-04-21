@@ -49,7 +49,7 @@ func SearchChannels(keyword string) (channels []*Channel, err error) {
 	if common.UsingPostgreSQL {
 		keyCol = `"key"`
 	}
-	err = DB.Omit("key").Where("id = ? or name LIKE ? or "+keyCol+" = ?", helper.String2Int(keyword), keyword+"%", keyword).Find(&channels).Error
+	err = DB.Omit("key").Where("id = ? or name ILIKE ? or "+keyCol+" = ?", helper.String2Int(keyword), "%"+keyword+"%", keyword).Find(&channels).Error
 	return channels, err
 }
 
