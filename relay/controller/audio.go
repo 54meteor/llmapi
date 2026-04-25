@@ -214,6 +214,17 @@ func RelayAudioHelper(c *gin.Context, relayMode int) *openai.ErrorWithStatusCode
 					err := model.PostConsumeTokenQuota(tokenId, -preConsumedQuota)
 					if err != nil {
 						logger.Error(ctx, fmt.Sprintf("error rollback pre-consumed quota: %s", err.Error()))
+						return
+					}
+					// Sync Redis cache with database
+					token, err := model.GetTokenById(tokenId)
+					if err != nil {
+						logger.Error(ctx, fmt.Sprintf("error get token for cache update: %s", err.Error()))
+						return
+					}
+					err = model.CacheUpdateUserQuota(token.UserId)
+					if err != nil {
+						logger.Error(ctx, fmt.Sprintf("error update user quota cache: %s", err.Error()))
 					}
 				}()
 			}(c.Request.Context())
