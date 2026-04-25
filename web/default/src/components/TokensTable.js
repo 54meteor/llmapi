@@ -207,31 +207,21 @@ const TokensTable = () => {
 
   const searchTokens = async () => {
     if (searchKeyword === '') {
-      // if keyword is blank, load files instead.
       await loadTokens(0);
       setActivePage(1);
       return;
     }
     setSearching(true);
-    if (isAdmin()) {
-      // Admin: filter locally from already loaded tokens
-      const keyword = searchKeyword.toLowerCase();
-      const filtered = tokens.filter(token =>
-        (token.name && token.name.toLowerCase().includes(keyword)) ||
-        (token.key && token.key.toLowerCase().includes(keyword)) ||
-        (token.username && token.username.toLowerCase().includes(keyword))
-      );
-      setTokens(filtered);
+    let url = isAdmin()
+      ? `/api/token/list-all?keyword=${encodeURIComponent(searchKeyword)}`
+      : `/api/token/search?keyword=${encodeURIComponent(searchKeyword)}`;
+    const res = await API.get(url);
+    const { success, message, data } = res.data;
+    if (success) {
+      setTokens(data);
       setActivePage(1);
     } else {
-      const res = await API.get(`/api/token/search?keyword=${searchKeyword}`);
-      const { success, message, data } = res.data;
-      if (success) {
-        setTokens(data);
-        setActivePage(1);
-      } else {
-        showError(message);
-      }
+      showError(message);
     }
     setSearching(false);
   };

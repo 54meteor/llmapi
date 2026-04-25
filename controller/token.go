@@ -296,7 +296,8 @@ func GetAllTokensAdmin(c *gin.Context) {
 			filterUserId = uid
 		}
 	}
-	tokens, err := model.GetAllTokensAdmin(filterUserId, p*config.ItemsPerPage, config.ItemsPerPage)
+	keyword := c.Query("keyword")
+	tokens, err := model.GetAllTokensAdmin(filterUserId, p*config.ItemsPerPage, config.ItemsPerPage, keyword)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
